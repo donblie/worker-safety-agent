@@ -253,7 +253,7 @@ st.markdown('<p class="section-label">功能模块</p>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="card-grid">
-    <a href="/01_安全知识问答" target="_self" class="card-link">
+    <a href="/安全知识问答" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">💬</div>
@@ -261,7 +261,7 @@ st.markdown("""
             <div class="card-desc">输入问题，立即得到基于规范的回答，支持追问</div>
         </div>
     </a>
-    <a href="/02_工地隐患识别" target="_self" class="card-link">
+    <a href="/工地隐患识别" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">📷</div>
@@ -269,7 +269,7 @@ st.markdown("""
             <div class="card-desc">拍张照片，AI自动识别安全隐患并给出整改建议</div>
         </div>
     </a>
-    <a href="/03_安全培训助手" target="_self" class="card-link">
+    <a href="/安全培训助手" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">📚</div>
@@ -277,7 +277,7 @@ st.markdown("""
             <div class="card-desc">选工种定主题，自动生成培训内容 + 随堂测验</div>
         </div>
     </a>
-    <a href="/04_应急处理指导" target="_self" class="card-link">
+    <a href="/应急处理指导" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">🆘</div>
