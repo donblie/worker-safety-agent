@@ -35,6 +35,13 @@ def inject_shared_styles():
             background: {t['bg']};
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
         }}
+        .stApp, .stMarkdown, [data-testid="stMarkdownContainer"], .stMarkdown p,
+        .stMarkdown span, .stMarkdown li, .stMarkdown div, label, .stSelectbox label {{
+            color: {t['text_body']} !important;
+        }}
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {{
+            color: {t['text_heading']} !important;
+        }}
         #MainMenu, footer, header[data-testid="stHeader"] {{
             display: none;
         }}
