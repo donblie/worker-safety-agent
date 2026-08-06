@@ -1,0 +1,154 @@
+"""
+LLM API 封装模块
+- LLMClient: DeepSeek文本对话（问答/培训/应急）
+- VisionClient: Qwen-VL视觉分析（工地隐患识别）
+- 内置超时、异常处理和兜底
+"""
+from openai import OpenAI
+from utils.config import (
+    DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL,
+    DEEPSEEK_CHAT_MODEL,
+    QWEN_API_KEY,
+    QWEN_BASE_URL,
+    QWEN_VISION_MODEL,
+    API_TIMEOUT,
+)
+from utils.safety_guard import safe_api_call
+
+
+class LLMClient:
+    """DeepSeek文本对话客户端"""
+
+    def __init__(self):
+        if not DEEPSEEK_API_KEY:
+            raise ValueError(
+                "DEEPSEEK_API_KEY not configured. "
+                "Add it to .env: DEEPSEEK_API_KEY=sk-your-key"
+            )
+        self.client = OpenAI(
+            api_key=DEEPSEEK_API_KEY,
+            base_url=DEEPSEEK_BASE_URL,
+        )
+        self.chat_model = DEEPSEEK_CHAT_MODEL
+        self.timeout = API_TIMEOUT
+
+    @safe_api_call(fallback_key="unknown_error")
+    def chat(
+        self,
+        system_prompt: str,
+        user_message: str,
+        model: str = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+    ) -> str:
+        """文本对话调用"""
+        response = self.client.chat.completions.create(
+            model=model or self.chat_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=self.timeout,
+        )
+        return response.choices[0].message.content
+
+    @safe_api_call(fallback_key="unknown_error")
+    def chat_with_context(
+        self,
+        system_prompt: str,
+        user_message: str,
+        context: str,
+        model: str = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+    ) -> str:
+        """带检索上下文的RAG对话"""
+        full_user_message = (
+            f"【参考资料（来自建筑安全规范）】\n{context}\n\n"
+            f"【工友的问题】\n{user_message}\n\n"
+            f"请基于参考资料回答问题。如果参考资料不足以回答，如实说明并用你的知识补充"
+            f"（标注'仅供参考'）。"
+        )
+        return self.chat(
+            system_prompt=system_prompt,
+            user_message=full_user_message,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
+
+class VisionClient:
+    """Qwen-VL 视觉分析客户端"""
+
+    def __init__(self):
+        if not QWEN_API_KEY:
+            raise ValueError(
+                "QWEN_API_KEY not configured. "
+                "Get your API key from Alibaba Cloud DashScope (dashscope.aliyun.com), "
+                "then add to .env: QWEN_API_KEY=sk-your-key"
+            )
+        self.client = OpenAI(
+            api_key=QWEN_API_KEY,
+            base_url=QWEN_BASE_URL,
+        )
+        self.model = QWEN_VISION_MODEL
+        self.timeout = 45  # 视觉模型响应较慢，给更多超时时间
+
+    @safe_api_call(fallback_key="unknown_error")
+    def analyze_image(
+        self,
+        system_prompt: str,
+        image_base64: str,
+        image_type: str = "image/jpeg",
+        user_message: str = "",
+        max_tokens: int = 2000,
+    ) -> str:
+        """
+        视觉分析：上传图片 + 文字提示 → 分析结果
+        Qwen-VL 支持 OpenAI Vision 格式的图片输入
+        """
+        user_content = [
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{image_type};base64,{image_base64}"},
+            },
+            {
+                "type": "text",
+                "text": user_message or "请仔细分析这张工地照片，识别所有安全隐患。",
+            },
+        ]
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            max_tokens=max_tokens,
+            timeout=self.timeout,
+        )
+        return response.choices[0].message.content
+
+
+# ── 全局单例 ──────────────────────────────────
+
+_llm_client: LLMClient = None
+_vision_client: VisionClient = None
+
+
+def get_llm_client() -> LLMClient:
+    global _llm_client
+    if _llm_client is None:
+        _llm_client = LLMClient()
+    return _llm_client
+
+
+def get_vision_client() -> VisionClient:
+    global _vision_client
+    if _vision_client is None:
+        _vision_client = VisionClient()
+    return _vision_client
