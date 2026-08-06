@@ -13,7 +13,7 @@ st.set_page_config(
 
 # ── 风格选择 ─────────────────────────────────
 if "theme" not in st.session_state:
-    st.session_state.theme = "light"
+    st.session_state.theme = "warm"
 
 # ── 主题定义 ─────────────────────────────────
 THEMES = {

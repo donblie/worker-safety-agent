@@ -6,7 +6,7 @@ import streamlit as st
 
 def _theme():
     """读取当前主题配色"""
-    name = st.session_state.get("theme", "light")
+    name = st.session_state.get("theme", "warm")
     themes = {
         "light": {
             "bg": "#F8FAFC", "card_bg": "#FFFFFF", "card_border": "#E2E8F0",
