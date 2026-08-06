@@ -1,6 +1,6 @@
 """
 全局配置管理
-优先级: Streamlit Cloud Secrets > .env 文件 > 默认值
+优先级: Streamlit Cloud Secrets > 环境变量 > .env 文件 > 默认值
 """
 import os
 from dotenv import load_dotenv
@@ -10,18 +10,26 @@ load_dotenv()
 
 def _get(key: str, default: str = "") -> str:
     """
-    智能读取配置：优先 st.secrets（云端），fallback 到环境变量/.env（本地）
+    读取配置。
+    Streamlit Cloud 上 st.secrets 和 os.environ 都会被注入，
+    这里优先从 os.environ 读（最可靠），st.secrets 兜底。
     """
+    # 方式1: 环境变量（.env 文件本地生效，Streamlit Cloud 也注入）
+    val = os.environ.get(key)
+    if val:
+        return val
+
+    # 方式2: st.secrets（Streamlit Cloud Dashboard 配置）
     try:
         import streamlit as st
-        # st.secrets 在 Streamlit Cloud 中可用
         if hasattr(st, "secrets"):
-            val = st.secrets.get(key)
+            val = st.secrets.get(key) or st.secrets[key] if key in st.secrets else None
             if val:
                 return val
     except Exception:
         pass
-    return os.getenv(key, default)
+
+    return default
 
 
 def _get_int(key: str, default: int = 0) -> int:

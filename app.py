@@ -180,4 +180,19 @@ with st.sidebar:
         st.info("📚 知识库待初始化")
 
     st.markdown("---")
+
+    # 密钥诊断（部署调试用）
+    with st.expander("🔧 诊断信息"):
+        import os as _os
+        dd_key = _os.environ.get("DEEPSEEK_API_KEY", "")
+        qw_key = _os.environ.get("QWEN_API_KEY", "")
+        st.write(f"DEEPSEEK_API_KEY env: {'✅ 已设置(' + dd_key[:8] + '...)' if dd_key else '❌ 未设置'}")
+        st.write(f"QWEN_API_KEY env: {'✅ 已设置(' + qw_key[:8] + '...)' if qw_key else '❌ 未设置'}")
+        try:
+            ss_keys = list(st.secrets.keys()) if hasattr(st, "secrets") else []
+            st.write(f"st.secrets keys: {ss_keys}")
+        except Exception as e:
+            st.write(f"st.secrets error: {e}")
+
+    st.markdown("---")
     st.caption("© 2026 海之子杯AI智能体挑战计划")
