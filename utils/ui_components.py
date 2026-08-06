@@ -1,93 +1,108 @@
 """
-共享UI样式 — 与首页设计系统一致
+共享UI样式 — 支持主题切换，与首页设计系统一致
 """
 import streamlit as st
 
-SAFETY_ORANGE = "#F97316"
-SLATE_700     = "#334155"
-SLATE_500     = "#64748B"
-SLATE_100     = "#F1F5F9"
-BG_COLOR      = "#F8FAFC"
+
+def _theme():
+    """读取当前主题配色"""
+    name = st.session_state.get("theme", "light")
+    themes = {
+        "light": {
+            "bg": "#F8FAFC", "card_bg": "#FFFFFF", "card_border": "#E2E8F0",
+            "text_heading": "#0F172A", "text_body": "#334155", "text_muted": "#64748B",
+            "accent": "#F97316", "accent_light": "#FFF7ED",
+        },
+        "warm": {
+            "bg": "#FFFBEB", "card_bg": "#FFFFFF", "card_border": "#FDE68A",
+            "text_heading": "#451A03", "text_body": "#78350F", "text_muted": "#A16207",
+            "accent": "#EA580C", "accent_light": "#FFF7ED",
+        },
+        "dark": {
+            "bg": "#0F172A", "card_bg": "#1E293B", "card_border": "#334155",
+            "text_heading": "#F1F5F9", "text_body": "#CBD5E1", "text_muted": "#94A3B8",
+            "accent": "#F97316", "accent_light": "#1E293B",
+        },
+    }
+    return themes.get(name, themes["light"])
 
 
 def inject_shared_styles():
-    """在所有子页面注入统一的浅色简洁CSS"""
-    st.markdown("""
+    t = _theme()
+    st.markdown(f"""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
-
-        .stApp {
-            font-family: 'Nunito', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: #F8FAFC;
-        }
-        #MainMenu, footer, header[data-testid="stHeader"] {
+        .stApp {{
+            background: {t['bg']};
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }}
+        #MainMenu, footer, header[data-testid="stHeader"] {{
             display: none;
-        }
+        }}
 
-        /* ── 页面顶栏 ── */
-        .page-header {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
+        .page-header {{
+            background: {t['card_bg']};
+            border: 1px solid {t['card_border']};
             border-radius: 20px;
             padding: 1.5rem 1.8rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .page-header h2 {
-            font-family: 'Fredoka', 'PingFang SC', sans-serif;
-            font-weight: 700;
+        }}
+        .page-header h2 {{
+            font-weight: 800;
             font-size: 1.35rem;
-            color: #1E293B !important;
+            color: {t['text_heading']} !important;
             margin: 0 0 0.3rem 0;
             letter-spacing: -0.02em;
-        }
-        .page-header .subtitle {
-            color: #64748B;
+        }}
+        .page-header .subtitle {{
+            color: {t['text_muted']};
             font-size: 0.9rem;
             font-weight: 500;
-        }
+        }}
 
-        /* ── 安全提醒条 ── */
-        .safety-notice {
-            background: #FFF7ED;
-            border: 1px solid #FED7AA;
+        .safety-notice {{
+            background: {t['accent_light']};
+            border: 1px solid {t['accent']}22;
             border-radius: 16px;
             padding: 0.9rem 1.3rem;
             font-size: 0.88rem;
-            color: #9A3412;
+            color: {t['accent']};
             margin: 1rem 0;
-            font-weight: 500;
-        }
+            font-weight: 600;
+        }}
 
-        /* ── 信息卡片 ── */
-        .info-card {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
+        .info-card {{
+            background: {t['card_bg']};
+            border: 1px solid {t['card_border']};
             border-radius: 16px;
             padding: 1.3rem 1.5rem;
             margin: 0.5rem 0;
-        }
+        }}
 
-        /* ── 高风险脉冲 ── */
-        @keyframes pulse-warning {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.35); }
-            50%      { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
-        }
-        .high-risk-alert {
-            border: 2px solid #F97316;
+        @keyframes pulse-warning {{
+            0%, 100% {{ box-shadow: 0 0 0 0 {t['accent']}50; }}
+            50%      {{ box-shadow: 0 0 0 10px {t['accent']}00; }}
+        }}
+        .high-risk-alert {{
+            border: 2px solid {t['accent']};
             border-radius: 16px;
             padding: 1.2rem;
-            background: #FFF7ED;
+            background: {t['accent_light']};
             animation: pulse-warning 2s infinite;
-        }
+        }}
 
-        @media (max-width: 640px) {
-            .page-header {
+        section[data-testid="stSidebar"] {{
+            background: {t['card_bg']};
+            border-right: 1px solid {t['card_border']};
+        }}
+
+        @media (max-width: 640px) {{
+            .page-header {{
                 padding: 1.1rem 1.2rem;
                 border-radius: 16px;
-            }
-            .page-header h2 { font-size: 1.15rem; }
-        }
+            }}
+            .page-header h2 {{ font-size: 1.15rem; }}
+        }}
     </style>
     """, unsafe_allow_html=True)
 
