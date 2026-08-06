@@ -1,30 +1,55 @@
 """
 全局配置管理
-读取 .env 文件中的环境变量，提供统一的配置入口
+优先级: Streamlit Cloud Secrets > .env 文件 > 默认值
 """
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _get(key: str, default: str = "") -> str:
+    """
+    智能读取配置：优先 st.secrets（云端），fallback 到环境变量/.env（本地）
+    """
+    try:
+        import streamlit as st
+        # st.secrets 在 Streamlit Cloud 中可用
+        if hasattr(st, "secrets"):
+            val = st.secrets.get(key)
+            if val:
+                return val
+    except Exception:
+        pass
+    return os.getenv(key, default)
+
+
+def _get_int(key: str, default: int = 0) -> int:
+    """读取整数配置"""
+    try:
+        return int(_get(key, str(default)))
+    except (ValueError, TypeError):
+        return default
+
+
 # ── DeepSeek API 配置（纯文本：问答/培训/应急）─────
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-DEEPSEEK_CHAT_MODEL = os.getenv("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
-API_TIMEOUT = int(os.getenv("API_TIMEOUT", "30"))
+DEEPSEEK_API_KEY = _get("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = _get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_CHAT_MODEL = _get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
+API_TIMEOUT = _get_int("API_TIMEOUT", 30)
 
 # ── Qwen-VL API 配置（视觉：工地隐患识别）────────
-QWEN_API_KEY = os.getenv("QWEN_API_KEY", "")
-QWEN_BASE_URL = os.getenv("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-QWEN_VISION_MODEL = os.getenv("QWEN_VISION_MODEL", "qwen-vl-max")
+QWEN_API_KEY = _get("QWEN_API_KEY", "")
+QWEN_BASE_URL = _get("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+QWEN_VISION_MODEL = _get("QWEN_VISION_MODEL", "qwen-vl-max")
 
 # ── 知识库配置 ─────────────────────────────────
-REGULATIONS_DIR = os.getenv("REGULATIONS_DIR", "./data/regulations")
-EMERGENCY_DIR = os.getenv("EMERGENCY_DIR", "./data/emergency")
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "50"))
-RETRIEVAL_TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "3"))
-KB_CACHE_DIR = os.getenv("KB_CACHE_DIR", "./data/kb_cache")
+REGULATIONS_DIR = _get("REGULATIONS_DIR", "./data/regulations")
+EMERGENCY_DIR = _get("EMERGENCY_DIR", "./data/emergency")
+CHUNK_SIZE = _get_int("CHUNK_SIZE", 500)
+CHUNK_OVERLAP = _get_int("CHUNK_OVERLAP", 50)
+RETRIEVAL_TOP_K = _get_int("RETRIEVAL_TOP_K", 3)
+KB_CACHE_DIR = _get("KB_CACHE_DIR", "./data/kb_cache")
 
 # ── 应用配置 ───────────────────────────────────
 APP_TITLE = "工友安全守护Agent"
