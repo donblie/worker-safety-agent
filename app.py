@@ -18,7 +18,7 @@ st.markdown("""
     /* ── 基础 ── */
     .stApp {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-        background: #f5f6fa;
+        background: #ffffff;
     }
 
     /* 隐藏Streamlit默认元素 */
@@ -74,7 +74,7 @@ st.markdown("""
     }
     .hero .subtitle {
         font-size: 0.95rem;
-        color: #5a6170;
+        color: #4b5058;
         line-height: 1.6;
         position: relative;
         z-index: 1;
@@ -188,7 +188,7 @@ st.markdown("""
     }
     .card-desc {
         font-size: 0.85rem;
-        color: #6b7280;
+        color: #4a5058;
         line-height: 1.5;
     }
     .card-arrow {

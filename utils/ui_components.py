@@ -44,8 +44,8 @@ def inject_shared_styles():
             letter-spacing: -0.02em;
         }
         .page-header .subtitle {
-            color: #6b7280;
-            font-size: 0.88rem;
+            color: #4b5058;
+            font-size: 0.9rem;
         }
 
         /* ── 安全提醒条 ── */
