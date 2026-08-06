@@ -4,12 +4,11 @@ LLM API 封装模块
 - VisionClient: Qwen-VL视觉分析（工地隐患识别）
 - 内置超时、异常处理和兜底
 """
+import os
 from openai import OpenAI
 from utils.config import (
-    DEEPSEEK_API_KEY,
     DEEPSEEK_BASE_URL,
     DEEPSEEK_CHAT_MODEL,
-    QWEN_API_KEY,
     QWEN_BASE_URL,
     QWEN_VISION_MODEL,
     API_TIMEOUT,
@@ -17,17 +16,36 @@ from utils.config import (
 from utils.safety_guard import safe_api_call
 
 
+def _read_api_key(key_name: str) -> str:
+    """运行时读取API密钥（支持环境变量和Streamlit Secrets）"""
+    # 1. 环境变量（本地.env文件 或 Streamlit Cloud注入）
+    val = os.environ.get(key_name, "")
+    if val:
+        return val
+    # 2. Streamlit Cloud Secrets
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            val = st.secrets.get(key_name, "")
+            if val:
+                return val
+    except Exception:
+        pass
+    return ""
+
+
 class LLMClient:
     """DeepSeek文本对话客户端"""
 
     def __init__(self):
-        if not DEEPSEEK_API_KEY:
+        api_key = _read_api_key("DEEPSEEK_API_KEY")
+        if not api_key:
             raise ValueError(
                 "DEEPSEEK_API_KEY not configured. "
                 "Add it to .env: DEEPSEEK_API_KEY=sk-your-key"
             )
         self.client = OpenAI(
-            api_key=DEEPSEEK_API_KEY,
+            api_key=api_key,
             base_url=DEEPSEEK_BASE_URL,
         )
         self.chat_model = DEEPSEEK_CHAT_MODEL
@@ -85,14 +103,15 @@ class VisionClient:
     """Qwen-VL 视觉分析客户端"""
 
     def __init__(self):
-        if not QWEN_API_KEY:
+        api_key = _read_api_key("QWEN_API_KEY")
+        if not api_key:
             raise ValueError(
                 "QWEN_API_KEY not configured. "
                 "Get your API key from Alibaba Cloud DashScope (dashscope.aliyun.com), "
                 "then add to .env: QWEN_API_KEY=sk-your-key"
             )
         self.client = OpenAI(
-            api_key=QWEN_API_KEY,
+            api_key=api_key,
             base_url=QWEN_BASE_URL,
         )
         self.model = QWEN_VISION_MODEL
