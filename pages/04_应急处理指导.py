@@ -151,48 +151,73 @@ if "guide_result" in st.session_state:
     from datetime import datetime
     now = datetime.now().strftime("%Y年%m月%d日 %H:%M")
 
-    etype_val = st.session_state.get("selected_emergency", "")
+    etype_val = str(st.session_state.get("selected_emergency", ""))
     is_high = etype_val in {"触电", "坍塌", "火灾", "爆炸", "有限空间窒息"}
-    severity = "🔴 高风险" if is_high else "🟡 中风险"
-    desc_val = st.session_state.get("emergency_description", "")
-    ppl = st.session_state.get("emergency_people_count", 1)
+    severity = "高风险" if is_high else "中风险"
+    desc_val = str(st.session_state.get("emergency_description", "") or "（待补充）")
+    ppl = int(st.session_state.get("emergency_people_count", 1))
 
-    # 提取应急摘要（取前3步的核心操作）
+    # 提取应急摘要
     steps_list = result.get("steps", [])
-    actions_summary = "、".join([s.get("action", "") for s in steps_list[:3]]) or "按应急指导处理"
+    if steps_list:
+        action_parts = [str(s.get("action", "")) for s in steps_list[:3] if s.get("action")]
+        actions_summary = "、".join(action_parts) if action_parts else "按应急指导处理"
+    else:
+        actions_summary = "按应急指导处理"
 
-    report_text = f"""🚨【紧急报告】{etype_val}事故
-━━━━━━━━━━━━━━━━━━
-🕐 时间：{now}
-⚠️ 等级：{severity}
-👥 人数：{ppl}人
-📍 地点：[点击填写具体位置]
-
-📋 现场情况：
-{desc_val or '（待补充）'}
-
-🔧 已采取措施：
-{actions_summary}
-
-📞 紧急联系：
-• 现场安全员：[点击拨打]
-• 项目经理：[点击拨打]
-• 急救电话：120
-━━━━━━━━━━━━━━━━━━
-🛡️ 工友安全守护Agent 自动生成"""
-
-    # 高风险脉冲警告条
+    # 高风险警告
     if is_high:
         st.warning("🚨 高风险事故！请立即采取行动，同时向上级报告。")
 
-    # 紧急报告 — 用 text_area 直接展示，可全选复制
-    st.text_area(
-        "📋 紧急报告（全选 → 复制 → 发微信/钉钉）",
-        value=report_text,
-        height=240,
-        key="_report_display",
-        label_visibility="visible",
+    # ── 紧急报告卡片（纯Streamlit组件，不用HTML）──
+    with st.container():
+        # 报告内容逐行展示
+        st.markdown(f"**🚨 紧急报告 — {etype_val}事故**")
+        st.divider()
+        st.caption(f"🕐 时间：{now}")
+        st.caption(f"⚠️ 等级：{'🔴' if is_high else '🟡'} {severity}")
+        st.caption(f"👥 人数：{ppl}人")
+        st.caption("📍 地点：[点击填写具体位置]")
+        st.divider()
+        st.markdown(f"**📋 现场情况：**\n\n{desc_val}")
+        st.markdown(f"**🔧 已采取措施：**\n\n{actions_summary}")
+        st.divider()
+        st.caption("📞 紧急联系：")
+        st.caption("• 现场安全员：[点击拨打]")
+        st.caption("• 项目经理：[点击拨打]")
+        st.caption("• 急救电话：120")
+        st.divider()
+        st.caption("🛡️ 工友安全守护Agent 自动生成")
+
+    # 同时提供可复制的纯文本框
+    report_text = (
+        f"🚨【紧急报告】{etype_val}事故\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"🕐 时间：{now}\n"
+        f"⚠️ 等级：{'🔴' if is_high else '🟡'} {severity}\n"
+        f"👥 人数：{ppl}人\n"
+        f"📍 地点：[点击填写具体位置]\n"
+        f"\n"
+        f"📋 现场情况：\n{desc_val}\n"
+        f"\n"
+        f"🔧 已采取措施：\n{actions_summary}\n"
+        f"\n"
+        f"📞 紧急联系：\n"
+        f"• 现场安全员：[点击拨打]\n"
+        f"• 项目经理：[点击拨打]\n"
+        f"• 急救电话：120\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"🛡️ 工友安全守护Agent 自动生成"
     )
+
+    with st.expander("📋 展开复制报告内容", expanded=False):
+        st.text_area(
+            "全选复制 → 发送到微信/钉钉",
+            value=report_text,
+            height=260,
+            key="_report_copy",
+            label_visibility="collapsed",
+        )
 
     # 操作按钮行
     c1, c2, c3 = st.columns(3)
@@ -203,26 +228,10 @@ if "guide_result" in st.session_state:
             st.rerun()
 
     with c2:
-        # 复制提示：在 text_area 上方已经可以直接全选复制
-        st.caption("👆 上方文本框可直接全选复制")
+        st.caption("👆 展开上方折叠区可复制报告")
 
     with c3:
-        st.markdown(f"""
-        <a href="tel:120" style="
-            display: block;
-            width: 100%;
-            padding: 0.55rem 1rem;
-            background: #EF4444;
-            color: #FFFFFF !important;
-            text-align: center;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 1rem;
-            text-decoration: none;
-            margin-top: 0.5rem;
-            transition: all 0.2s;
-        ">📞 拨打 120</a>
-        """, unsafe_allow_html=True)
+        st.link_button("📞 拨打 120", url="tel:120", type="secondary", use_container_width=True)
 
     # 上报成功后的二次确认
     if st.session_state.get("report_sent"):
