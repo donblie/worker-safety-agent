@@ -62,12 +62,23 @@ if analysis_mode == "📸 快速拍照（拍完即分析）":
             if error:
                 st.error(error)
             else:
-                with st.spinner("🔄 AI正在看图分析..."):
+                with st.status("📸 正在分析照片...", expanded=True) as status:
+                    status.write("🖼️ 编码图片...")
                     img_b64, img_type = encode_image(camera_img)
 
                     if img_b64 is None:
                         st.error(img_type)
+                        status.update(label="❌ 分析失败", state="error")
                     else:
+                        status.write("✅ 图片编码完成")
+                        status.write("👁️ Qwen-VL 正在逐项检查...")
+                        status.write("  · 人员防护（安全帽/安全带/反光背心）")
+                        status.write("  · 高处作业（临边/洞口/防护栏杆）")
+                        status.write("  · 临时用电（电线/配电箱/接地）")
+                        status.write("  · 机械设备安全装置")
+                        status.write("  · 物料堆放与消防通道")
+                        status.write("  · 基坑/边坡状态")
+                        status.write("  · 消防安全设施")
                         result = analyze_image(
                             image_base64=img_b64,
                             image_type=img_type,
@@ -75,11 +86,13 @@ if analysis_mode == "📸 快速拍照（拍完即分析）":
                         )
 
                         if result.get("success"):
+                            status.update(label="✅ 分析完成！", state="complete")
                             st.session_state.hazard_result = result
                             st.session_state._camera_analyzed = True
                             st.rerun()
                         else:
                             st.error(result.get("error", "分析失败，请重试"))
+                            status.update(label="❌ 分析失败", state="error")
 
         # 用户点了"清除拍照"后，重置标记
         if camera_img is None:
@@ -125,12 +138,23 @@ else:
                 )
 
                 if analyze_btn:
-                    with st.spinner("🔄 AI正在看图分析..."):
+                    with st.status("📸 正在分析照片...", expanded=True) as status:
+                        status.write("🖼️ 编码图片...")
                         img_b64, img_type = encode_image(uploaded_file)
 
                         if img_b64 is None:
                             st.error(img_type)
+                            status.update(label="❌ 分析失败", state="error")
                         else:
+                            status.write("✅ 图片编码完成")
+                            status.write("👁️ Qwen-VL 正在逐项检查...")
+                            status.write("  · 人员防护（安全帽/安全带/反光背心）")
+                            status.write("  · 高处作业（临边/洞口/防护栏杆）")
+                            status.write("  · 临时用电（电线/配电箱/接地）")
+                            status.write("  · 机械设备安全装置")
+                            status.write("  · 物料堆放与消防通道")
+                            status.write("  · 基坑/边坡状态")
+                            status.write("  · 消防安全设施")
                             result = analyze_image(
                                 image_base64=img_b64,
                                 image_type=img_type,
@@ -138,10 +162,12 @@ else:
                             )
 
                             if result.get("success"):
+                                status.update(label="✅ 分析完成！", state="complete")
                                 st.session_state.hazard_result = result
                                 st.rerun()
                             else:
                                 st.error(result.get("error", "分析失败，请重试"))
+                                status.update(label="❌ 分析失败", state="error")
 
 # ── 显示分析结果（两种模式共用）──────────────
 if "hazard_result" in st.session_state:

@@ -108,29 +108,31 @@ if user_question:
             # 显示用户问题
             st.session_state.qa_history.append({"role": "user", "content": user_question})
 
-            with st.spinner("🔄 正在查找相关规范并生成回答..."):
+            with st.status("🔍 正在处理您的问题...", expanded=True) as status:
                 try:
                     # 步骤1：RAG检索
                     context = ""
+                    search_results = []
                     if kb_ready:
+                        status.write("📚 检索知识库...")
                         search_results = kb.search(user_question)
                         if search_results:
                             context = kb.search_formatted(user_question)
+                            status.write(f"✅ 找到 {len(search_results)} 条相关规范段落")
                         else:
-                            context = ""  # 检索无结果，降级为纯LLM
+                            status.write("⚠️ 未在知识库中找到直接匹配，使用通用知识回答")
 
-                    # 步骤2：构建消息
+                    # 步骤2：LLM生成
                     llm = get_llm_client()
+                    status.write("🤖 DeepSeek 正在组织回答...")
 
                     if context:
-                        # 有检索结果，基于规范回答
                         answer = llm.chat_with_context(
                             system_prompt=QA_SYSTEM_PROMPT,
                             user_message=user_question,
                             context=context,
                         )
                     else:
-                        # 无检索结果，降级为纯LLM回答
                         fallback_prompt = (
                             QA_SYSTEM_PROMPT +
                             "\n\n注意：当前知识库中未找到该问题的相关规范，请基于你的建筑安全知识回答，"
@@ -141,6 +143,8 @@ if user_question:
                             user_message=user_question,
                         )
 
+                    status.update(label="✅ 回答完成!", state="complete")
+
                     # 步骤3：检查返回结果（兜底：如果LLM返回了错误信息）
                     if any(err_keyword in str(answer) for err_keyword in
                            ["⏱️", "🔑", "🌐", "⏳", "😞"]):
@@ -149,7 +153,6 @@ if user_question:
                             "content": str(answer)
                         })
                     else:
-                        # 正常回答
                         st.session_state.qa_history.append({
                             "role": "assistant",
                             "content": str(answer)

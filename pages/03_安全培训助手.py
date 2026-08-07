@@ -51,7 +51,8 @@ with col3:
 gen_btn = st.button("🎓 生成培训内容", type="primary", use_container_width=True)
 
 if gen_btn:
-    with st.spinner("🔄 正在生成培训内容..."):
+    with st.status("📚 正在生成培训内容...", expanded=True) as status:
+        status.write("🔍 检索相关安全规范...")
         result = generate_training(
             worker_type=worker_type,
             topic=topic,
@@ -59,9 +60,13 @@ if gen_btn:
         )
 
         if result.get("success"):
+            status.write("✍️ DeepSeek 生成大纲与详细讲解...")
+            status.write("📝 生成配套测验题...")
+            status.update(label="✅ 培训内容生成完成！", state="complete")
             st.session_state.training_result = result
         else:
             st.error(result.get("error", "生成失败，请重试"))
+            status.update(label="❌ 生成失败", state="error")
 
 # ── 显示结果 ─────────────────────────────────
 if "training_result" in st.session_state:

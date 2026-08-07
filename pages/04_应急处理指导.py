@@ -70,7 +70,8 @@ if "selected_emergency" in st.session_state:
         st.session_state.emergency_description = description
         st.session_state.emergency_people_count = people_count
 
-        with st.spinner("🔄 正在生成应急指导..."):
+        with st.status("🆘 正在生成应急指导...", expanded=True) as status:
+            status.write("🔍 匹配应急预案模板...")
             result = generate_emergency_guide(
                 emergency_type=etype,
                 description=description,
@@ -78,9 +79,16 @@ if "selected_emergency" in st.session_state:
             )
 
             if result.get("success"):
+                status.write("📋 DeepSeek 生成分步指导...")
+                status.write("  · 最关键第一步")
+                status.write("  · 完整操作步骤")
+                status.write("  · 绝对禁止事项")
+                status.write("  · 何时拨打120")
+                status.update(label="✅ 应急指导生成完成！", state="complete")
                 st.session_state.guide_result = result
             else:
                 st.error(result.get("error", "生成失败，请重试"))
+                status.update(label="❌ 生成失败", state="error")
 
 # ── 显示指导结果 ─────────────────────────────
 if "guide_result" in st.session_state:
