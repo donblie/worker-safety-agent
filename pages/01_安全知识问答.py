@@ -83,14 +83,15 @@ with chat_container:
 # ── 输入区域 ─────────────────────────────────
 st.markdown("---")
 
-# 如果有示例问题点击，填入输入框
-default_question = st.session_state.get("current_question", "")
-if default_question:
-    st.session_state.pop("current_question")
-
+# 合并两个来源的问题：chat_input输入 或 示例按钮点击
 user_question = st.chat_input(
     placeholder="输入您的安全问题，比如：高处作业安全带怎么挂？",
 )
+
+# 如果chat_input没有输入但有点击示例问题，使用示例问题
+clicked_question = st.session_state.pop("current_question", None)
+if not user_question and clicked_question:
+    user_question = clicked_question
 
 # ── 处理用户输入 ────────────────────────────
 if user_question:
@@ -145,18 +146,10 @@ if user_question:
 
                     status.update(label="✅ 回答完成!", state="complete")
 
-                    # 步骤3：检查返回结果（兜底：如果LLM返回了错误信息）
-                    if any(err_keyword in str(answer) for err_keyword in
-                           ["⏱️", "🔑", "🌐", "⏳", "😞"]):
-                        st.session_state.qa_history.append({
-                            "role": "assistant",
-                            "content": str(answer)
-                        })
-                    else:
-                        st.session_state.qa_history.append({
-                            "role": "assistant",
-                            "content": str(answer)
-                        })
+                    st.session_state.qa_history.append({
+                        "role": "assistant",
+                        "content": str(answer)
+                    })
 
                 except Exception as e:
                     error_response = FALLBACK_MESSAGES["unknown_error"]
