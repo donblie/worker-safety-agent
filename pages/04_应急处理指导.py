@@ -13,7 +13,7 @@ from core.emergency_guide import (
     EMERGENCY_TYPES,
     EMERGENCY_DESCRIPTIONS,
 )
-from utils.ui_components import inject_shared_styles, page_header, page_footer, _theme
+from utils.ui_components import inject_shared_styles, page_header, page_footer
 
 
 st.set_page_config(page_title="应急处理指导 - 工友安全守护", page_icon="🆘", layout="wide")
@@ -181,35 +181,18 @@ if "guide_result" in st.session_state:
 ━━━━━━━━━━━━━━━━━━
 🛡️ 工友安全守护Agent 自动生成"""
 
-    # 紧急报告卡片
-    t = _theme()
+    # 高风险脉冲警告条
+    if is_high:
+        st.warning("🚨 高风险事故！请立即采取行动，同时向上级报告。")
 
-    st.markdown(f"""
-    <div style="
-        background: {t['card_bg']};
-        border: 2px solid {'#EF4444' if is_high else t['accent']};
-        border-radius: 16px;
-        padding: 1.2rem 1.5rem;
-        margin-bottom: 1rem;
-        {'animation: pulse-warning 2s infinite;' if is_high else ''}
-    ">
-        <div style="font-weight:800; font-size:1rem; color:{t['text_heading']}; margin-bottom:0.8rem;">
-            🚨 紧急报告
-        </div>
-        <pre style="
-            background: {t['bg']};
-            border-radius: 10px;
-            padding: 1rem;
-            font-size: 0.85rem;
-            font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            color: {t['text_body']};
-            line-height: 1.7;
-            white-space: pre-wrap;
-            margin: 0;
-            border: 1px solid {t['card_border']};
-        ">{report_text}</pre>
-    </div>
-    """, unsafe_allow_html=True)
+    # 紧急报告 — 用 text_area 直接展示，可全选复制
+    st.text_area(
+        "📋 紧急报告（全选 → 复制 → 发微信/钉钉）",
+        value=report_text,
+        height=240,
+        key="_report_display",
+        label_visibility="visible",
+    )
 
     # 操作按钮行
     c1, c2, c3 = st.columns(3)
@@ -217,12 +200,11 @@ if "guide_result" in st.session_state:
     with c1:
         if st.button("🚨 一键上报", type="primary", use_container_width=True, key="_send_report"):
             st.session_state.report_sent = True
-            st.success("✅ 已上报：现场安全员 ✓ | 项目经理 ✓ | 应急小组 ✓")
-            st.toast("🚨 紧急报告已发送！", icon="🚨")
+            st.rerun()
 
     with c2:
-        if st.button("📋 复制报告内容", use_container_width=True, key="_copy_report"):
-            st.session_state.show_copy_area = not st.session_state.get("show_copy_area", False)
+        # 复制提示：在 text_area 上方已经可以直接全选复制
+        st.caption("👆 上方文本框可直接全选复制")
 
     with c3:
         st.markdown(f"""
@@ -241,16 +223,6 @@ if "guide_result" in st.session_state:
             transition: all 0.2s;
         ">📞 拨打 120</a>
         """, unsafe_allow_html=True)
-
-    # 复制区域（点击按钮后展开）
-    if st.session_state.get("show_copy_area"):
-        st.text_area(
-            "📋 全选复制以下内容，发送到微信/钉钉群",
-            value=report_text,
-            height=200,
-            key="_report_copy_area",
-        )
-        st.caption("👆 点击上方文本框，Ctrl+A 全选，Ctrl+C 复制，然后粘贴到微信或钉钉")
 
     # 上报成功后的二次确认
     if st.session_state.get("report_sent"):
