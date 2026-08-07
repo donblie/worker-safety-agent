@@ -103,6 +103,62 @@ def inject_shared_styles():
             border-right: 1px solid {t['card_border']};
         }}
 
+        /* ── Streamlit 按钮 ── */
+        .stButton > button, button[kind="secondary"] {{
+            background: {t['card_bg']} !important;
+            color: {t['text_body']} !important;
+            border: 1px solid {t['card_border']} !important;
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            transition: all 0.2s !important;
+        }}
+        .stButton > button:hover, button[kind="secondary"]:hover {{
+            border-color: {t['accent']} !important;
+            color: {t['accent']} !important;
+            background: {t['accent_light']} !important;
+        }}
+        button[kind="primary"] {{
+            background: {t['accent']} !important;
+            color: #FFFFFF !important;
+            border: 1px solid {t['accent']} !important;
+        }}
+        button[kind="primary"]:hover {{
+            background: {t['accent']}DD !important;
+        }}
+
+        /* ── Streamlit 输入框/文本域/数字输入 ── */
+        .stTextInput input, .stTextArea textarea, .stNumberInput input {{
+            background: {t['card_bg']} !important;
+            color: {t['text_body']} !important;
+            border: 1px solid {t['card_border']} !important;
+            border-radius: 10px !important;
+        }}
+        .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {{
+            border-color: {t['accent']} !important;
+            box-shadow: 0 0 0 2px {t['accent']}22 !important;
+        }}
+        .stTextInput label, .stTextArea label, .stNumberInput label {{
+            color: {t['text_heading']} !important;
+        }}
+
+        /* ── Streamlit radio / checkbox ── */
+        .stRadio label, .stCheckbox label {{
+            color: {t['text_body']} !important;
+        }}
+
+        /* ── Streamlit selectbox ── */
+        .stSelectbox [data-baseweb="select"] {{
+            background: {t['card_bg']} !important;
+        }}
+        .stSelectbox [data-baseweb="select"] div {{
+            color: {t['text_body']} !important;
+        }}
+
+        /* ── Streamlit spinner ── */
+        .stSpinner {{
+            color: {t['text_body']} !important;
+        }}
+
         @media (max-width: 640px) {{
             .page-header {{
                 padding: 1.1rem 1.2rem;
