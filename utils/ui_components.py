@@ -154,6 +154,80 @@ def inject_shared_styles():
             color: {t['text_body']} !important;
         }}
 
+        /* ── Streamlit radio ── */
+        .stRadio [data-baseweb="radio"] div:first-child {{
+            border-color: {t['card_border']} !important;
+            background: {t['card_bg']} !important;
+        }}
+        .stRadio label p {{
+            color: {t['text_body']} !important;
+        }}
+
+        /* ── Streamlit checkbox ── */
+        .stCheckbox [data-baseweb="checkbox"] div:first-child {{
+            border-color: {t['card_border']} !important;
+            background: {t['card_bg']} !important;
+        }}
+        .stCheckbox label p {{
+            color: {t['text_body']} !important;
+        }}
+
+        /* ── Streamlit expander ── */
+        [data-testid="stExpander"] details {{
+            border-color: {t['card_border']} !important;
+            border-radius: 12px !important;
+            overflow: hidden;
+        }}
+        [data-testid="stExpander"] summary {{
+            background: {t['card_bg']} !important;
+            color: {t['text_body']} !important;
+            border-radius: 12px !important;
+        }}
+        [data-testid="stExpander"] summary:hover {{
+            color: {t['accent']} !important;
+        }}
+        [data-testid="stExpander"] .stMarkdown {{
+            background: {t['bg']} !important;
+        }}
+
+        /* ── Streamlit metric ── */
+        [data-testid="stMetricValue"] {{
+            color: {t['text_heading']} !important;
+        }}
+        [data-testid="stMetricLabel"] {{
+            color: {t['text_muted']} !important;
+        }}
+        [data-testid="stMetricValue"] + div {{
+            color: {t['text_body']} !important;
+        }}
+
+        /* ── Streamlit file uploader ── */
+        [data-testid="stFileUploader"] section {{
+            background: {t['card_bg']} !important;
+            border: 1px dashed {t['card_border']} !important;
+            border-radius: 12px !important;
+        }}
+        [data-testid="stFileUploader"] section:hover {{
+            border-color: {t['accent']} !important;
+        }}
+        [data-testid="stFileUploader"] span {{
+            color: {t['text_muted']} !important;
+        }}
+        [data-testid="stFileUploader"] small {{
+            color: {t['text_muted']} !important;
+        }}
+
+        /* ── Streamlit chat_input ── */
+        [data-testid="stChatInput"] textarea {{
+            background: {t['card_bg']} !important;
+            color: {t['text_body']} !important;
+            border: 1px solid {t['card_border']} !important;
+            border-radius: 12px !important;
+        }}
+        [data-testid="stChatInput"] textarea:focus {{
+            border-color: {t['accent']} !important;
+        }}
+
         /* ── Streamlit spinner ── */
         .stSpinner {{
             color: {t['text_body']} !important;
