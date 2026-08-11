@@ -190,15 +190,14 @@ _SAFETY_KEYWORDS = {
 
 def _is_safety_related(text: str) -> bool:
     """快速关键词匹配判断是否与工地安全相关"""
-    # 太短的输入放宽判断
-    if len(text) < 4:
+    # 太短的输入放宽判断（可能是"安全吗""咋整"等口语简问）
+    if len(text) < 6:
         return True
     for kw in _SAFETY_KEYWORDS:
         if kw in text:
             return True
-    # 如果没有任何关键词命中，仍然放行（避免误拦）
-    # 非安全问题的最终判断交给 LLM 自身的角色约束
-    return True
+    # 无任何安全关键词命中 → 判定为不相关
+    return False
 
 
 # ── 防重复提交 ────────────────────────────────
