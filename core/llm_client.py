@@ -5,6 +5,8 @@ LLM API 封装模块
 - 内置超时、异常处理和兜底
 """
 import os
+import time
+import threading
 from openai import OpenAI
 from utils.config import (
     DEEPSEEK_BASE_URL,
@@ -14,6 +16,8 @@ from utils.config import (
     API_TIMEOUT,
 )
 from utils.safety_guard import safe_api_call
+from utils.cache import _qa_cache, _vision_cache
+from utils.logger import log_api_call
 
 
 def _read_api_key(key_name: str) -> str:
@@ -60,9 +64,16 @@ class LLMClient:
         temperature: float = 0.3,
         max_tokens: int = 2000,
     ) -> str:
-        """文本对话调用"""
+        """文本对话调用（带缓存）"""
+        # 检查缓存
+        model_name = model or self.chat_model
+        cached = _qa_cache.get(system_prompt, user_message, model_name, temperature)
+        if cached is not None:
+            return cached
+
+        start = time.perf_counter()
         response = self.client.chat.completions.create(
-            model=model or self.chat_model,
+            model=model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
@@ -71,7 +82,12 @@ class LLMClient:
             max_tokens=max_tokens,
             timeout=self.timeout,
         )
-        return response.choices[0].message.content
+        elapsed = (time.perf_counter() - start) * 1000
+        result = response.choices[0].message.content
+        tokens = response.usage.total_tokens if hasattr(response, 'usage') and response.usage else 0
+        log_api_call("DeepSeek", model_name, elapsed, True, tokens_used=tokens)
+        _qa_cache.set(result, system_prompt, user_message, model_name, temperature)
+        return result
 
     @safe_api_call(fallback_key="unknown_error")
     def chat_with_context(
@@ -127,9 +143,15 @@ class VisionClient:
         max_tokens: int = 2000,
     ) -> str:
         """
-        视觉分析：上传图片 + 文字提示 → 分析结果
+        视觉分析：上传图片 + 文字提示 → 分析结果（带缓存）
         Qwen-VL 支持 OpenAI Vision 格式的图片输入
         """
+        # 用图片前200字符做缓存键（避免整张base64做键太占内存）
+        img_key = image_base64[:200] if image_base64 else ""
+        cached = _vision_cache.get(system_prompt, img_key, user_message)
+        if cached is not None:
+            return cached
+
         user_content = [
             {
                 "type": "image_url",
@@ -141,6 +163,7 @@ class VisionClient:
             },
         ]
 
+        start = time.perf_counter()
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
@@ -150,24 +173,34 @@ class VisionClient:
             max_tokens=max_tokens,
             timeout=self.timeout,
         )
-        return response.choices[0].message.content
+        elapsed = (time.perf_counter() - start) * 1000
+        result = response.choices[0].message.content
+        tokens = response.usage.total_tokens if hasattr(response, 'usage') and response.usage else 0
+        log_api_call("Qwen-VL", self.model, elapsed, True, tokens_used=tokens)
+        _vision_cache.set(result, system_prompt, img_key, user_message)
+        return result
 
 
-# ── 全局单例 ──────────────────────────────────
+# ── 全局单例（线程安全）───────────────────────
 
 _llm_client: LLMClient = None
 _vision_client: VisionClient = None
+_lock = threading.Lock()
 
 
 def get_llm_client() -> LLMClient:
     global _llm_client
     if _llm_client is None:
-        _llm_client = LLMClient()
+        with _lock:
+            if _llm_client is None:  # 双重检查
+                _llm_client = LLMClient()
     return _llm_client
 
 
 def get_vision_client() -> VisionClient:
     global _vision_client
     if _vision_client is None:
-        _vision_client = VisionClient()
+        with _lock:
+            if _vision_client is None:
+                _vision_client = VisionClient()
     return _vision_client

@@ -18,6 +18,7 @@ from utils.safety_guard import (
     SubmitGuard,
 )
 from utils.ui_components import inject_shared_styles, page_header, page_footer
+from utils.json_parser import is_api_error_response
 
 # ── 页面配置 ─────────────────────────────────
 st.set_page_config(

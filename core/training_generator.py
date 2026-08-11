@@ -8,6 +8,7 @@ import json
 from core.llm_client import get_llm_client
 from core.knowledge_base import get_knowledge_base
 from utils.prompts import TRAINING_SYSTEM_PROMPT
+from utils.json_parser import extract_json, is_api_error_response
 
 
 # 工种列表（建筑工地常见工种）
@@ -86,22 +87,13 @@ def generate_training(
         )
 
         # 检查兜底错误
-        if any(keyword in str(response) for keyword in
-               ["⏱️", "🔑", "🌐", "⏳", "😞", "服务繁忙", "API密钥"]):
+        if is_api_error_response(response):
             return {
                 "success": False,
                 "error": str(response),
             }
 
-        # 解析JSON
-        json_str = str(response).strip()
-        if json_str.startswith("```"):
-            start = json_str.find("{")
-            end = json_str.rfind("}") + 1
-            if start >= 0 and end > start:
-                json_str = json_str[start:end]
-
-        result = json.loads(json_str)
+        result = extract_json(str(response))
         result["success"] = True
         return result
 

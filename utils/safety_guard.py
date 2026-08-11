@@ -12,6 +12,7 @@ from openai import (
     APIConnectionError,
     APIError,
 )
+from utils.logger import log
 
 
 # ── 降级话术模板 ──────────────────────────────
@@ -124,11 +125,10 @@ def safe_api_call(fallback_key: str = "unknown_error"):
             except RateLimitError:
                 return FALLBACK_MESSAGES["rate_limit"]
             except APIError as e:
-                # 保留原始错误信息用于日志
-                print(f"[API Error] {type(e).__name__}: {str(e)}")
+                log("ERROR", f"APIError [{type(e).__name__}]: {str(e)[:200]}")
                 return FALLBACK_MESSAGES.get(fallback_key, FALLBACK_MESSAGES["unknown_error"])
             except Exception as e:
-                print(f"[Unexpected Error] {type(e).__name__}: {str(e)}")
+                log("ERROR", f"Unexpected [{type(e).__name__}]: {str(e)[:200]}")
                 return FALLBACK_MESSAGES.get(fallback_key, FALLBACK_MESSAGES["unknown_error"])
         return wrapper
     return decorator
@@ -160,7 +160,45 @@ def validate_input(text: str) -> Optional[str]:
         return FALLBACK_MESSAGES["empty_input"]
     if len(text.strip()) < 2:
         return "请至少输入2个字描述您的问题。"
+    # 检查是否与安全相关（关键词快速过滤）
+    if not _is_safety_related(text.strip()):
+        return FALLBACK_MESSAGES["not_safety_related"]
     return None
+
+
+# ── 安全相关性关键词过滤 ──────────────────────
+
+_SAFETY_KEYWORDS = {
+    # 安全对象
+    "安全帽", "安全带", "安全网", "安全绳", "安全鞋", "防护", "反光背心", "手套",
+    "脚手架", "扣件", "立杆", "横杆", "剪刀撑", "连墙件",
+    "配电箱", "电线", "电缆", "漏电", "接地", "触电", "电压", "开关箱",
+    "高处", "临边", "洞口", "基坑", "边坡", "模板", "支架",
+    "塔吊", "起重机", "施工电梯", "电焊", "气瓶", "切割",
+    "消防", "灭火器", "通道", "逃生", "火灾", "爆炸",
+    # 安全动作
+    "安全", "隐患", "危险", "整改", "规范", "标准", "检查", "巡检",
+    "培训", "应急", "急救", "救援", "事故", "伤害", "坠落",
+    "坍塌", "塌方", "中毒", "窒息",
+    # 工种/场景
+    "架子工", "电工", "焊工", "钢筋工", "模板工", "混凝土", "塔吊司机",
+    "施工", "工地", "建筑", "现场",
+    # 规范相关
+    "JGJ", "GB", "条文", "规定",
+}
+
+
+def _is_safety_related(text: str) -> bool:
+    """快速关键词匹配判断是否与工地安全相关"""
+    # 太短的输入放宽判断
+    if len(text) < 4:
+        return True
+    for kw in _SAFETY_KEYWORDS:
+        if kw in text:
+            return True
+    # 如果没有任何关键词命中，仍然放行（避免误拦）
+    # 非安全问题的最终判断交给 LLM 自身的角色约束
+    return True
 
 
 # ── 防重复提交 ────────────────────────────────

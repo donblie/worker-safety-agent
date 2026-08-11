@@ -12,6 +12,7 @@ from core.llm_client import get_vision_client
 from core.knowledge_base import get_knowledge_base
 from utils.prompts import VISION_SYSTEM_PROMPT
 from utils.safety_guard import get_high_risk_disclaimer
+from utils.json_parser import extract_json, is_api_error_response
 
 
 def encode_image(image_file) -> tuple:
@@ -88,19 +89,11 @@ def analyze_image(
         )
 
         # 兜底检查
-        if any(kw in str(raw_response) for kw in
-               ["⏱️", "🔑", "🌐", "⏳", "😞", "服务繁忙", "API密钥", "服务暂不可用"]):
+        if is_api_error_response(raw_response):
             return {"success": False, "error": str(raw_response)}
 
         # ── 步骤2: 解析视觉分析结果 ─────────────
-        json_str = str(raw_response).strip()
-        if json_str.startswith("```"):
-            start = json_str.find("{")
-            end = json_str.rfind("}") + 1
-            if start >= 0 and end > start:
-                json_str = json_str[start:end]
-
-        result = json.loads(json_str)
+        result = extract_json(str(raw_response))
 
         # ── 步骤3: RAG检索相关规范 ──────────────
         if kb.is_ready():

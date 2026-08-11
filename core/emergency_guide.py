@@ -9,6 +9,7 @@ from core.llm_client import get_llm_client
 from core.knowledge_base import get_knowledge_base
 from utils.prompts import EMERGENCY_SYSTEM_PROMPT
 from utils.safety_guard import is_high_risk_emergency, get_high_risk_disclaimer
+from utils.json_parser import extract_json, is_api_error_response
 
 
 # 预定义的紧急情况类型
@@ -97,22 +98,13 @@ def generate_emergency_guide(
         )
 
         # 检查兜底错误
-        if any(keyword in str(response) for keyword in
-               ["⏱️", "🔑", "🌐", "⏳", "😞", "服务繁忙", "API密钥"]):
+        if is_api_error_response(response):
             return {
                 "success": False,
                 "error": str(response),
             }
 
-        # 解析JSON
-        json_str = str(response).strip()
-        if json_str.startswith("```"):
-            start = json_str.find("{")
-            end = json_str.rfind("}") + 1
-            if start >= 0 and end > start:
-                json_str = json_str[start:end]
-
-        result = json.loads(json_str)
+        result = extract_json(str(response))
 
         # 高风险紧急情况自动追加免责声明
         if is_high_risk_emergency(emergency_type):

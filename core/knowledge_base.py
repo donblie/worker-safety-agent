@@ -7,6 +7,7 @@
 import os
 import re
 import pickle
+import threading
 from typing import List, Dict, Optional
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -16,6 +17,7 @@ from utils.config import (
     CHUNK_SIZE,
     CHUNK_OVERLAP,
     RETRIEVAL_TOP_K,
+    RETRIEVAL_MIN_SCORE,
     KB_CACHE_DIR,
 )
 
@@ -169,12 +171,12 @@ class KnowledgeBase:
         # 计算余弦相似度
         scores = cosine_similarity(query_vec, self.chunk_vectors)[0]
 
-        # 取top-k
+        # 取top-k，过滤低于阈值的噪音
         top_indices = scores.argsort()[-top_k:][::-1]
 
         formatted = []
         for idx in top_indices:
-            if scores[idx] > 0:
+            if scores[idx] >= RETRIEVAL_MIN_SCORE:
                 chunk = self.chunks[idx]
                 formatted.append({
                     "content": chunk["content"],
@@ -213,13 +215,16 @@ class KnowledgeBase:
         return len(self.chunks) > 0 and self.vectorizer is not None
 
 
-# 全局单例
+# 全局单例（线程安全）
 _knowledge_base: KnowledgeBase = None
+_kb_lock = threading.Lock()
 
 
 def get_knowledge_base() -> KnowledgeBase:
     """获取知识库单例"""
     global _knowledge_base
     if _knowledge_base is None:
-        _knowledge_base = KnowledgeBase()
+        with _kb_lock:
+            if _knowledge_base is None:
+                _knowledge_base = KnowledgeBase()
     return _knowledge_base
