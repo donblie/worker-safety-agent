@@ -21,7 +21,7 @@ from utils.config import (
     KB_EMBEDDING_MODEL,
     KB_CACHE_DIR,
 )
-from utils.logger import log
+from utils.logger import log, log_retrieval
 
 # ── 延迟加载 BGE（可选依赖）────────────────────
 _SENTENCE_TRANSFORMERS_AVAILABLE = False
@@ -249,9 +249,12 @@ class KnowledgeBase:
         检索最相关的规范段落
         返回: [{"content": "...", "doc_name": "...", "score": 0.xx}, ...]
         """
+        import time as _time
+        start = _time.perf_counter()
         top_k = top_k or RETRIEVAL_TOP_K
 
         if not self.chunks:
+            log_retrieval(query, 0, 0.0, (_time.perf_counter() - start) * 1000)
             return []
 
         # 查询向量化
@@ -265,6 +268,7 @@ class KnowledgeBase:
             query_vec = self.vectorizer.transform([query])
             scores = cosine_similarity(query_vec, self.chunk_vectors)[0]
         else:
+            log_retrieval(query, 0, 0.0, (_time.perf_counter() - start) * 1000)
             return []
 
         # 取top-k，过滤低于阈值的噪音
@@ -280,6 +284,10 @@ class KnowledgeBase:
                     "chunk_index": chunk["chunk_index"],
                     "score": round(float(scores[idx]), 4),
                 })
+
+        elapsed = (_time.perf_counter() - start) * 1000
+        top_score = formatted[0]["score"] if formatted else 0.0
+        log_retrieval(query, len(formatted), top_score, elapsed)
 
         return formatted
 
