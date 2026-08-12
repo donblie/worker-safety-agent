@@ -62,8 +62,9 @@ def log(level: str, message: str):
         level_map = {"DEBUG": logging.DEBUG, "INFO": logging.INFO,
                      "WARN": logging.WARNING, "ERROR": logging.ERROR}
         fl.log(level_map.get(level, logging.INFO), message)
-    except Exception:
-        pass  # 文件写入失败不影响主流程
+    except Exception as e:
+        # 不吞错误：至少打印到 stdout，方便排查
+        print(f"[{_ts()}] [WARN] Log file write failed: {e}", flush=True)
 
 
 def log_api_call(provider: str, model: str, duration_ms: float, success: bool,
