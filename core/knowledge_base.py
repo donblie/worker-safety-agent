@@ -101,6 +101,7 @@ class KnowledgeBase:
     def _load_cache(self):
         """从磁盘加载已缓存的向量化数据"""
         if not os.path.exists(self.cache_file):
+            log("INFO", f"Cache file not found ({self.cache_file}), KB not initialized. Run: python init_kb.py")
             return False
 
         try:
