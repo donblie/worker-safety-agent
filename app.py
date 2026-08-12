@@ -418,6 +418,15 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ── 扫码入口 ────────────────────────────────
+st.markdown("---")
+col_qr, col_text = st.columns([1, 3])
+with col_qr:
+    st.image("docs/app_qrcode.png", width=120)
+with col_text:
+    st.markdown("#### 📱 手机扫码即可打开")
+    st.caption("添加到手机主屏幕后像原生App一样使用。")
+
 # ── 底部 ────────────────────────────────────
 st.markdown('<div class="page-footer">🛡️ 安全第一 · 生命至上</div>', unsafe_allow_html=True)
 

@@ -2,6 +2,13 @@
 
 建筑工地安全智能助手 —— 安全知识随时问 · 隐患拍照能识别 · 培训内容自动生成 · 紧急情况有指导 · **AI Agent智能调度**
 
+## 📱 扫码体验
+
+<p align="center">
+  <img src="docs/app_qrcode.png" width="200" alt="扫码体验工友安全守护Agent">
+</p>
+<p align="center"><b>👆 手机扫码直接打开（Streamlit Cloud）</b></p>
+
 ## 功能模块
 
 | 模块 | 说明 |
