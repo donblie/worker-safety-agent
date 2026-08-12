@@ -106,6 +106,22 @@ def analyze_image(
                 "requires_immediate_action": False,
             })
 
+        # ── 步骤2.5: 检测"非工地场景"拒绝 ────────
+        summary = result.get("summary", "")
+        if summary.startswith("NOT_CONSTRUCTION:"):
+            reason = summary.replace("NOT_CONSTRUCTION:", "").strip()
+            return {
+                "success": False,
+                "error": (
+                    f"📷 无法分析：{reason}\n\n"
+                    "请确认上传的是**建筑工地现场**照片（包括在建建筑、施工人员、机械、材料堆场等）。\n\n"
+                    "💡 **提示**：如果确实是工地照片但被误判，请尝试：\n"
+                    "• 选择更有施工特征的区域拍摄（如脚手架、安全网、塔吊等）\n"
+                    "• 确保光线充足、主体清晰\n"
+                    "• 在补充说明中描述工地场景（如'某项目3号楼主体施工阶段'）"
+                ),
+            }
+
         # ── 步骤3: RAG检索相关规范 ──────────────
         if kb.is_ready():
             # 根据识别出的隐患类型检索规范

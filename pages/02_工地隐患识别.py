@@ -179,7 +179,20 @@ if "hazard_result" in st.session_state:
     # 概述
     summary = result.get("summary", "")
     if summary:
-        st.info(f"**分析结论：** {summary}")
+        # 检测模型是否拒绝分析（旧版兜底：summary中含"无法分析"或NOT_CONSTRUCTION）
+        if summary.startswith("NOT_CONSTRUCTION:") or "无法分析" in summary:
+            st.warning(
+                "📷 **无法完成隐患分析**\n\n"
+                f"{summary}\n\n"
+                "请确认上传的是**建筑工地现场**照片（包括在建建筑、施工人员、机械、材料堆场等）。\n\n"
+                "💡 如果确实是工地照片但被误判，请尝试：\n"
+                "• 选择更有施工特征的区域（脚手架、安全网、塔吊等）\n"
+                "• 确保光线充足、主体清晰\n"
+                "• 在补充描述中说明工地场景"
+            )
+            st.stop()  # 不显示后续的空报告
+        else:
+            st.info(f"**分析结论：** {summary}")
 
     # 隐患列表
     hazards = result.get("hazards", [])
