@@ -14,7 +14,7 @@ from core.training_generator import (
     TRAINING_TOPICS,
     DIFFICULTY_LEVELS,
 )
-from utils.ui_components import inject_shared_styles, page_header, page_footer
+from utils.ui_components import inject_shared_styles, page_header, page_footer, mobile_bottom_nav
 
 
 st.set_page_config(page_title="安全培训助手 - 工友安全守护", page_icon="📚", layout="wide")
@@ -162,3 +162,4 @@ with col1:
         st.rerun()
 with col2:
     page_footer(show_home=False)
+mobile_bottom_nav()

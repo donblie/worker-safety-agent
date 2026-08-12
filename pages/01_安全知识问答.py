@@ -17,7 +17,7 @@ from utils.safety_guard import (
     FALLBACK_MESSAGES,
     SubmitGuard,
 )
-from utils.ui_components import inject_shared_styles, page_header, page_footer
+from utils.ui_components import inject_shared_styles, page_header, page_footer, mobile_bottom_nav
 from utils.json_parser import is_api_error_response
 
 # ── 页面配置 ─────────────────────────────────
@@ -186,3 +186,4 @@ with col1:
         st.rerun()
 with col2:
     page_footer(show_home=False)
+mobile_bottom_nav()

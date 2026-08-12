@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.vision_analyzer import encode_image, analyze_image
 from utils.safety_guard import validate_image
-from utils.ui_components import inject_shared_styles, page_header, page_footer
+from utils.ui_components import inject_shared_styles, page_header, page_footer, mobile_bottom_nav
 
 st.set_page_config(page_title="工地隐患识别 - 工友安全守护", page_icon="📷", layout="wide")
 
@@ -269,3 +269,4 @@ with col2:
     st.caption("💡 提示：拍清晰照片，分析更准确")
 with col3:
     page_footer(show_home=False)
+mobile_bottom_nav()

@@ -13,7 +13,7 @@ from core.emergency_guide import (
     EMERGENCY_TYPES,
     EMERGENCY_DESCRIPTIONS,
 )
-from utils.ui_components import inject_shared_styles, page_header, page_footer
+from utils.ui_components import inject_shared_styles, page_header, page_footer, mobile_bottom_nav
 
 
 st.set_page_config(page_title="应急处理指导 - 工友安全守护", page_icon="🆘", layout="wide")
@@ -271,3 +271,4 @@ with col2:
         st.rerun()
 with col3:
     page_footer(show_home=False)
+mobile_bottom_nav()

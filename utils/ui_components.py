@@ -267,3 +267,86 @@ def page_footer(show_home: bool = True):
         if show_home:
             if st.button("🏠 返回首页", use_container_width=True, key="_footer_home"):
                 st.switch_page("app.py")
+
+
+def mobile_bottom_nav():
+    """移动端底部导航栏 — 粘性固定在页面底部，方便单手操作"""
+    t = _theme()
+    st.markdown(f"""
+    <style>
+        .mobile-nav-spacer {{
+            height: 72px;
+        }}
+        .mobile-bottom-nav {{
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            background: {t['card_bg']};
+            border-top: 1px solid {t['card_border']};
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 6px 4px max(6px, env(safe-area-inset-bottom)) 4px;
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+        }}
+        .mobile-bottom-nav a {{
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 4px 6px;
+            border-radius: 10px;
+            min-width: 52px;
+            transition: all 0.15s;
+        }}
+        .mobile-bottom-nav a:hover {{
+            background: {t['accent_light']};
+        }}
+        .mobile-bottom-nav .nav-icon {{
+            font-size: 1.25rem;
+            line-height: 1;
+        }}
+        .mobile-bottom-nav .nav-label {{
+            font-size: 0.65rem;
+            color: {t['text_muted']};
+            font-weight: 500;
+            white-space: nowrap;
+        }}
+        .mobile-bottom-nav a.active .nav-label {{
+            color: {t['accent']};
+            font-weight: 700;
+        }}
+        /* 桌面端隐藏底部导航（侧边栏已够用） */
+        @media (min-width: 768px) {{
+            .mobile-bottom-nav, .mobile-nav-spacer {{
+                display: none;
+            }}
+        }}
+    </style>
+    <div class="mobile-nav-spacer"></div>
+    <div class="mobile-bottom-nav">
+        <a href="/" target="_self">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">首页</span>
+        </a>
+        <a href="/安全知识问答" target="_self">
+            <span class="nav-icon">💬</span>
+            <span class="nav-label">问答</span>
+        </a>
+        <a href="/工地隐患识别" target="_self">
+            <span class="nav-icon">📷</span>
+            <span class="nav-label">隐患</span>
+        </a>
+        <a href="/安全培训助手" target="_self">
+            <span class="nav-icon">📚</span>
+            <span class="nav-label">培训</span>
+        </a>
+        <a href="/应急处理指导" target="_self">
+            <span class="nav-icon">🆘</span>
+            <span class="nav-label">应急</span>
+        </a>
+    </div>
+    """, unsafe_allow_html=True)

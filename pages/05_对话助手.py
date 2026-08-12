@@ -13,7 +13,7 @@ import json
 from core.agent import agent_chat_stream
 from core.vision_analyzer import encode_image
 from utils.safety_guard import validate_input, FALLBACK_MESSAGES, SubmitGuard
-from utils.ui_components import inject_shared_styles, page_header, page_footer
+from utils.ui_components import inject_shared_styles, page_header, page_footer, mobile_bottom_nav
 from utils.logger import log
 
 # ── 页面配置 ─────────────────────────────────
@@ -199,3 +199,4 @@ with col1:
         st.rerun()
 with col2:
     page_footer(show_home=False)
+mobile_bottom_nav()

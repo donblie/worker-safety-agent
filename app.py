@@ -412,6 +412,10 @@ st.markdown("""
 # ── 底部 ────────────────────────────────────
 st.markdown('<div class="page-footer">🛡️ 安全第一 · 生命至上</div>', unsafe_allow_html=True)
 
+# 移动端底部导航
+from utils.ui_components import mobile_bottom_nav
+mobile_bottom_nav()
+
 # ── 侧边栏 ──────────────────────────────────
 with st.sidebar:
     st.markdown("### 🛡️ 安全小海")
