@@ -88,6 +88,28 @@ def extract_json(raw_response: str) -> dict:
     raise ValueError("Unterminated JSON object in response")
 
 
+def validate_and_fix_json(data: dict, required_fields: list, defaults: dict = None) -> dict:
+    """
+    校验 JSON 是否包含必要字段，缺失字段用默认值填充。
+
+    防止 LLM 返回结构正确但字段缺失的 JSON 导致下游
+    取 result.get("steps", []) 等静默为空，UI 一片空白。
+
+    返回: 补全后的 dict（不修改原始 dict）
+    """
+    defaults = defaults or {}
+    fixed = dict(data)  # 浅拷贝
+    missing = []
+    for field in required_fields:
+        if field not in fixed or fixed[field] is None:
+            fixed[field] = defaults.get(field)
+            missing.append(field)
+    if missing:
+        from utils.logger import log
+        log("WARN", f"JSON schema fix: filled missing fields {missing}")
+    return fixed
+
+
 def is_api_error_response(response: Any) -> bool:
     """
     判断 LLM 返回是否为 API 层面的错误降级消息。

@@ -9,7 +9,7 @@ from core.llm_client import get_llm_client
 from core.knowledge_base import get_knowledge_base
 from utils.prompts import EMERGENCY_SYSTEM_PROMPT
 from utils.safety_guard import is_high_risk_emergency, get_high_risk_disclaimer
-from utils.json_parser import extract_json, is_api_error_response
+from utils.json_parser import extract_json, is_api_error_response, validate_and_fix_json
 
 
 # 预定义的紧急情况类型
@@ -89,6 +89,12 @@ def generate_emergency_guide(
 
     if context:
         user_message += f"\n\n【参考应急预案】\n{context}"
+    else:
+        user_message += (
+            "\n\n⚠️ 注意：知识库当前不可用或未检索到相关应急预案。"
+            "请基于你的通用安全急救知识生成应急指导，并在开头标注"
+            "'⚠️ 知识库未就绪，以下应急指导基于通用知识，紧急情况下请以现场安全员和急救人员指令为准。'"
+        )
 
     try:
         response = llm.chat(
@@ -105,6 +111,19 @@ def generate_emergency_guide(
             }
 
         result = extract_json(str(response))
+
+        # Schema 校验：缺失字段用默认值填充
+        result = validate_and_fix_json(result,
+            required_fields=["emergency", "first_thing", "steps", "donts",
+                           "when_to_call_120", "after_emergency"],
+            defaults={
+                "emergency": emergency_type,
+                "first_thing": "立即拨打120并报告现场安全员",
+                "steps": [],
+                "donts": ["不要慌乱", "不要盲目移动伤员"],
+                "when_to_call_120": "有人受伤、意识不清或情况失控时立即拨打120",
+                "after_emergency": "保护现场，配合调查，总结经验教训",
+            })
 
         # 高风险紧急情况自动追加免责声明
         if is_high_risk_emergency(emergency_type):

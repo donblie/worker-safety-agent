@@ -107,8 +107,9 @@ if user_question:
         else:
             guard.mark_submitted()
 
-            # 显示用户问题
+            # 显示用户问题，初始化LLM客户端
             st.session_state.qa_history.append({"role": "user", "content": user_question})
+            llm = get_llm_client()
 
             with st.status("🔍 正在处理您的问题...", expanded=True) as status:
                 try:
@@ -124,41 +125,56 @@ if user_question:
                         else:
                             status.write("⚠️ 未在知识库中找到直接匹配，使用通用知识回答")
 
-                    # 步骤2：LLM生成
-                    llm = get_llm_client()
+                    # 步骤1.5：注入对话历史（近3轮，支持追问）
+                    history_context = ""
+                    if len(st.session_state.qa_history) >= 3:
+                        recent = st.session_state.qa_history[-7:]  # 最近3轮+当前问题
+                        history_context = "【对话历史】\n" + "\n".join(
+                            f"{'👷工友' if m['role']=='user' else '🤖助手'}: {m['content'][:300]}"
+                            for m in recent
+                        ) + "\n\n"
+
+                    # 步骤2：构建消息并通知
                     status.write("🤖 DeepSeek 正在组织回答...")
-
-                    if context:
-                        answer = llm.chat_with_context(
-                            system_prompt=QA_SYSTEM_PROMPT,
-                            user_message=user_question,
-                            context=context,
-                        )
-                    else:
-                        fallback_prompt = (
-                            QA_SYSTEM_PROMPT +
-                            "\n\n注意：当前知识库中未找到该问题的相关规范，请基于你的建筑安全知识回答，"
-                            "并在回答末尾标注'⚠️ 未在规范库中找到直接相关条文，以上内容基于通用建筑安全知识，建议咨询现场安全员核实。'"
-                        )
-                        answer = llm.chat(
-                            system_prompt=fallback_prompt,
-                            user_message=user_question,
-                        )
-
-                    status.update(label="✅ 回答完成!", state="complete")
-
-                    st.session_state.qa_history.append({
-                        "role": "assistant",
-                        "content": str(answer)
-                    })
+                    status.update(label="💬 AI正在回答...", state="running")
 
                 except Exception as e:
-                    error_response = FALLBACK_MESSAGES["unknown_error"]
-                    st.session_state.qa_history.append({
-                        "role": "assistant",
-                        "content": f"{error_response}\n\n> 错误详情：{str(e)}"
-                    })
+                    status.update(label=f"❌ 检索失败: {str(e)[:50]}", state="error")
+                    context = ""
+                    history_context = ""
 
+            # 步骤3：流式输出（在status外，实时显示）
+            with st.chat_message("assistant"):
+                if context:
+                    stream = llm.chat_with_context_stream(
+                        system_prompt=QA_SYSTEM_PROMPT,
+                        user_message=user_question,
+                        context=context,
+                        history=history_context,
+                    )
+                else:
+                    fallback_prompt = (
+                        QA_SYSTEM_PROMPT +
+                        "\n\n注意：当前知识库中未找到该问题的相关规范，请基于你的建筑安全知识回答，"
+                        "并在回答末尾标注'⚠️ 未在规范库中找到直接相关条文，以上内容基于通用建筑安全知识，建议咨询现场安全员核实。'"
+                    )
+                    msg_with_history = user_question
+                    if history_context:
+                        msg_with_history = history_context + "\n【工友的问题】\n" + user_question
+                    stream = llm.chat_stream(
+                        system_prompt=fallback_prompt,
+                        user_message=msg_with_history,
+                    )
+
+                full_answer = st.write_stream(stream)
+
+            # 保存到历史
+            st.session_state.qa_history.append({
+                "role": "assistant",
+                "content": full_answer or ""
+            })
+
+            # 重新运行以刷新UI（显示完整对话和status完成状态）
             st.rerun()
 
 # ── 底部操作 ─────────────────────────────────

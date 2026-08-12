@@ -89,23 +89,105 @@ class LLMClient:
         _qa_cache.set(result, system_prompt, user_message, model_name, temperature)
         return result
 
+    def chat_stream(
+        self,
+        system_prompt: str,
+        user_message: str,
+        model: str = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+    ):
+        """
+        流式文本对话（Generator）。
+        使用 stream=True，yield 每个文本 delta。
+        Streamlit 中用 st.write_stream() 消费。
+        """
+        import time as _time
+        model_name = model or self.chat_model
+
+        try:
+            start = _time.perf_counter()
+            stream = self.client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=self.timeout,
+                stream=True,
+            )
+            total_text = ""
+            for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    delta = chunk.choices[0].delta.content
+                    total_text += delta
+                    yield delta
+
+            elapsed = (_time.perf_counter() - start) * 1000
+            log_api_call("DeepSeek", model_name, elapsed, True,
+                        tokens_used=len(total_text) // 2)  # 粗略估算
+            _qa_cache.set(total_text, system_prompt, user_message, model_name, temperature)
+
+        except Exception as e:
+            log("ERROR", f"Stream chat failed [{type(e).__name__}]: {str(e)[:200]}")
+            from utils.safety_guard import FALLBACK_MESSAGES
+            yield FALLBACK_MESSAGES.get("unknown_error", "😞 系统遇到了技术问题。")
+
+    def chat_with_context_stream(
+        self,
+        system_prompt: str,
+        user_message: str,
+        context: str,
+        history: str = "",
+        model: str = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+    ):
+        """带检索上下文和历史对话的流式RAG对话"""
+        parts = []
+        if history:
+            parts.append(history)
+        if context:
+            parts.append(f"【参考资料（来自建筑安全规范）】\n{context}")
+        parts.append(f"【工友的问题】\n{user_message}")
+        parts.append(
+            "请基于参考资料回答问题。如果参考资料不足以回答，如实说明并用你的知识补充"
+            "（标注'仅供参考'）。回答时请结合对话历史中的上下文，理解用户的追问意图。"
+        )
+        full_user_message = "\n\n".join(parts)
+        yield from self.chat_stream(
+            system_prompt=system_prompt,
+            user_message=full_user_message,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
     @safe_api_call(fallback_key="unknown_error")
     def chat_with_context(
         self,
         system_prompt: str,
         user_message: str,
         context: str,
+        history: str = "",
         model: str = None,
         temperature: float = 0.3,
         max_tokens: int = 2000,
     ) -> str:
-        """带检索上下文的RAG对话"""
-        full_user_message = (
-            f"【参考资料（来自建筑安全规范）】\n{context}\n\n"
-            f"【工友的问题】\n{user_message}\n\n"
-            f"请基于参考资料回答问题。如果参考资料不足以回答，如实说明并用你的知识补充"
-            f"（标注'仅供参考'）。"
+        """带检索上下文和历史对话的RAG对话"""
+        parts = []
+        if history:
+            parts.append(history)
+        if context:
+            parts.append(f"【参考资料（来自建筑安全规范）】\n{context}")
+        parts.append(f"【工友的问题】\n{user_message}")
+        parts.append(
+            "请基于参考资料回答问题。如果参考资料不足以回答，如实说明并用你的知识补充"
+            "（标注'仅供参考'）。回答时请结合对话历史中的上下文，理解用户的追问意图。"
         )
+        full_user_message = "\n\n".join(parts)
         return self.chat(
             system_prompt=system_prompt,
             user_message=full_user_message,

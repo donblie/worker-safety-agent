@@ -3,3 +3,5 @@ openai>=1.50.0
 scikit-learn>=1.0.0
 python-dotenv>=1.0.0
 Pillow>=10.0.0
+# 可选：语义嵌入模型（不安装则自动降级为TF-IDF关键词检索）
+# sentence-transformers>=3.0.0

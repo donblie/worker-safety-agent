@@ -57,7 +57,8 @@ EMERGENCY_DIR = _get("EMERGENCY_DIR", "./data/emergency")
 CHUNK_SIZE = _get_int("CHUNK_SIZE", 500)
 CHUNK_OVERLAP = _get_int("CHUNK_OVERLAP", 50)
 RETRIEVAL_TOP_K = _get_int("RETRIEVAL_TOP_K", 3)
-RETRIEVAL_MIN_SCORE = 0.08  # TF-IDF相似度阈值，低于此值视为噪音
+RETRIEVAL_MIN_SCORE = 0.08  # 相似度阈值，低于此值视为噪音（TF-IDF/BGE共用）
+KB_EMBEDDING_MODEL = _get("KB_EMBEDDING_MODEL", "BAAI/bge-small-zh-v1.5")
 KB_CACHE_DIR = _get("KB_CACHE_DIR", "./data/kb_cache")
 
 # ── 应用配置 ───────────────────────────────────

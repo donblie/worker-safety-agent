@@ -12,7 +12,7 @@ from core.llm_client import get_vision_client
 from core.knowledge_base import get_knowledge_base
 from utils.prompts import VISION_SYSTEM_PROMPT
 from utils.safety_guard import get_high_risk_disclaimer
-from utils.json_parser import extract_json, is_api_error_response
+from utils.json_parser import extract_json, is_api_error_response, validate_and_fix_json
 
 
 def encode_image(image_file) -> tuple:
@@ -94,6 +94,17 @@ def analyze_image(
 
         # ── 步骤2: 解析视觉分析结果 ─────────────
         result = extract_json(str(raw_response))
+
+        # Schema 校验：缺失字段用默认值填充
+        result = validate_and_fix_json(result,
+            required_fields=["summary", "hazards", "positive_findings",
+                           "requires_immediate_action"],
+            defaults={
+                "summary": "AI视觉分析完成",
+                "hazards": [],
+                "positive_findings": [],
+                "requires_immediate_action": False,
+            })
 
         # ── 步骤3: RAG检索相关规范 ──────────────
         if kb.is_ready():

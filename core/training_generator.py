@@ -8,7 +8,7 @@ import json
 from core.llm_client import get_llm_client
 from core.knowledge_base import get_knowledge_base
 from utils.prompts import TRAINING_SYSTEM_PROMPT
-from utils.json_parser import extract_json, is_api_error_response
+from utils.json_parser import extract_json, is_api_error_response, validate_and_fix_json
 
 
 # 工种列表（建筑工地常见工种）
@@ -94,6 +94,19 @@ def generate_training(
             }
 
         result = extract_json(str(response))
+
+        # Schema 校验：缺失字段用默认值填充
+        result = validate_and_fix_json(result,
+            required_fields=["title", "target_audience", "duration",
+                           "outline", "content", "quiz"],
+            defaults={
+                "title": f"{worker_type} - {topic}安全培训",
+                "target_audience": worker_type,
+                "duration": "约30分钟",
+                "outline": [],
+                "content": [],
+                "quiz": [],
+            })
         result["success"] = True
         return result
 

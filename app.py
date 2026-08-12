@@ -140,11 +140,13 @@ st.markdown(f"""
     /* ── 卡片网格 ── */
     .card-grid {{
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 1.2rem;
-        max-width: 800px;
+        max-width: 960px;
         margin: 0 auto 2.5rem auto;
     }}
+    @media (max-width: 800px) {{
+        .card-grid {{ grid-template-columns: 1fr 1fr; }}    }}
     @media (max-width: 640px) {{
         .card-grid {{ grid-template-columns: 1fr; }}
         .hero {{ padding: 2rem 1rem 1.5rem 1rem; }}
@@ -364,6 +366,14 @@ st.markdown('<p class="section-label">功能模块</p>', unsafe_allow_html=True)
 
 st.markdown("""
 <div class="card-grid">
+    <a href="/对话助手" target="_self" class="card-link">
+        <div class="feature-card" style="border: 2px solid #EA580C33; background: linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 100%);">
+            <div class="card-chevron">→</div>
+            <div class="card-icon-box">🤖</div>
+            <div class="card-title">对话助手 <span style="font-size:0.65rem;color:#EA580C;font-weight:700;background:#FFF7ED;padding:2px 6px;border-radius:4px;">NEW</span></div>
+            <div class="card-desc">智能Agent自动判断需求，一站式搞定知识问答、培训生成、应急指导</div>
+        </div>
+    </a>
     <a href="/安全知识问答" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
@@ -424,6 +434,7 @@ with st.sidebar:
     st.markdown("---")
 
     st.markdown("**📱 功能模块**")
+    st.page_link("pages/05_对话助手.py", label="🤖 对话助手 (NEW)")
     st.page_link("pages/01_安全知识问答.py", label="💬 安全知识问答")
     st.page_link("pages/02_工地隐患识别.py", label="📷 工地隐患识别")
     st.page_link("pages/03_安全培训助手.py", label="📚 安全培训助手")
