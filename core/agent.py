@@ -1,6 +1,6 @@
 """
 单Agent调度器 —— Function Calling 统一入口
-- 定义3个Tool（搜索规范/生成培训/应急指导）
+- 定义4个Tool（搜索规范/分析图片/生成培训/应急指导）
 - AgentLoop: 自动判断意图 → 调度工具 → 合成回答
 - 支持流式输出和多轮对话
 """
@@ -17,6 +17,27 @@ from utils.prompts import QA_SYSTEM_PROMPT
 from utils.logger import log
 
 # ═══════════════════════════════════════════════════════════
+# 待处理图片（页面设置，Tool执行器读取）
+# ═══════════════════════════════════════════════════════════
+
+_pending_image_b64: str = None
+_pending_image_type: str = None
+
+
+def set_pending_image(b64: str, mime_type: str = "image/jpeg"):
+    """存入待分析图片（由页面在调用 agent_chat_stream 之前设置）"""
+    global _pending_image_b64, _pending_image_type
+    _pending_image_b64 = b64
+    _pending_image_type = mime_type
+
+
+def clear_pending_image():
+    """清除已分析图片"""
+    global _pending_image_b64, _pending_image_type
+    _pending_image_b64 = None
+    _pending_image_type = None
+
+# ═══════════════════════════════════════════════════════════
 # Agent 系统提示词
 # ═══════════════════════════════════════════════════════════
 
@@ -25,7 +46,7 @@ AGENT_SYSTEM_PROMPT = """你是"安全小海"，一个建筑工地安全助手Ag
 ## 你的能力
 你可以通过调用工具来完成以下任务：
 1. **搜索安全规范** — 当工友问安全知识问题时，先搜索规范库
-2. **分析工地隐患** — 当工友上传工地照片时，分析安全隐患
+2. **分析工地隐患** — 当工友上传工地照片时，调用 analyze_construction_image 工具进行视觉分析
 3. **生成培训材料** — 当工友需要安全培训内容时
 4. **应急指导** — 当工友描述紧急情况时
 
@@ -35,12 +56,10 @@ AGENT_SYSTEM_PROMPT = """你是"安全小海"，一个建筑工地安全助手Ag
 3. **不确定就诚实说**：如果工具返回的信息不够，告诉工友"这个我不太确定，建议问现场安全员"
 4. **紧急情况优先**：如果工友描述的情况像紧急事故，先给应急指导
 5. **不要编造规范条文**：只引用工具返回的实际规范内容
+6. **工友上传了照片**：如果用户消息包含"上传了工地照片"或"📷"标记，说明工友需要分析这张照片——必须调用 analyze_construction_image 工具
 
 ## 可用工种
-架子工、电工、焊工、起重工、信号工、模板工、钢筋工、混凝土工、砌筑工、抹灰工、油漆工、防水工、管道工、挖掘机司机、塔吊司机
-
-## 可分析图片
-工友可以上传工地照片，你会调用视觉分析工具识别安全隐患。"""
+架子工、电工、焊工、起重工、信号工、模板工、钢筋工、混凝土工、砌筑工、抹灰工、油漆工、防水工、管道工、挖掘机司机、塔吊司机"""
 
 # ═══════════════════════════════════════════════════════════
 # Tool Definitions (OpenAI Function Calling 格式)
@@ -111,6 +130,23 @@ TOOLS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_construction_image",
+            "description": "分析工友上传的工地照片，识别安全隐患（7大类检查：人员防护、高处作业、临时用电、机械设备、物料堆放、基坑边坡、消防安全）。当用户上传了工地照片并请AI看时，必须调用此工具。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "description": "工友对照片的补充描述，如拍摄位置、关注的区域等（可选）"
+                    }
+                },
+                "required": []
+            }
+        }
+    },
 ]
 
 # ═══════════════════════════════════════════════════════════
@@ -154,6 +190,30 @@ def execute_tool(tool_name: str, tool_args: dict) -> str:
         if not result.get("success"):
             return f"应急指导生成失败：{result.get('error', '未知错误')}"
         return json.dumps(result, ensure_ascii=False, indent=2)
+
+    elif tool_name == "analyze_construction_image":
+        if not _pending_image_b64:
+            return (
+                "⚠️ 未检测到上传的图片。"
+                "请告知工友：请先在页面左侧上传工地照片，再描述需要分析的内容。"
+            )
+        result = analyze_image(
+            image_base64=_pending_image_b64,
+            image_type=_pending_image_type or "image/jpeg",
+            user_description=tool_args.get("description", ""),
+        )
+        clear_pending_image()
+        if not result.get("success"):
+            return f"图片分析失败：{result.get('error', '未知错误')}"
+        # 提取关键信息返回
+        summary_text = {
+            "分析结论": result.get("summary", ""),
+            "发现隐患数": len(result.get("hazards", [])),
+            "隐患详情": result.get("hazards", []),
+            "符合规范": result.get("positive_findings", []),
+            "是否紧急": result.get("requires_immediate_action", False),
+        }
+        return json.dumps(summary_text, ensure_ascii=False, indent=2)
 
     else:
         return f"未知工具: {tool_name}"

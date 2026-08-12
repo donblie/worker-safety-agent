@@ -15,6 +15,14 @@ st.set_page_config(
 if "theme" not in st.session_state:
     st.session_state.theme = "warm"
 
+# ── 冷启动提示（仅首次加载弹一次）──────────────
+if "app_loaded_once" not in st.session_state:
+    st.session_state.app_loaded_once = False
+
+if not st.session_state.app_loaded_once:
+    st.toast("🚀 应用启动中... 免费版冷启动约需15-30秒，感谢耐心等待！", icon="⏳")
+    st.session_state.app_loaded_once = True
+
 # ── 主题定义 ─────────────────────────────────
 THEMES = {
     "light": {
@@ -350,6 +358,7 @@ st.markdown(f"""
     <h1>工友安全<span>守护</span></h1>
     <p class="subtitle">
         安全知识随时问 &nbsp;·&nbsp; 隐患拍照能识别 &nbsp;·&nbsp; 培训内容自动生成 &nbsp;·&nbsp; 紧急情况有指导
+        <br><small style="opacity:0.6;">Streamlit Cloud 免费版 · 休眠后冷启动约15-30秒</small>
     </p>
 </div>
 """, unsafe_allow_html=True)

@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
 
-from core.agent import agent_chat_stream
+from core.agent import agent_chat_stream, set_pending_image, clear_pending_image
 from core.vision_analyzer import encode_image
 from utils.safety_guard import validate_input, FALLBACK_MESSAGES, SubmitGuard
 from utils.ui_components import inject_shared_styles, page_header, page_footer, mobile_bottom_nav
@@ -38,7 +38,7 @@ page_header("🤖 对话助手", "智能识别需求，自动调度工具——�
 # ── 侧边栏：图片上传 ──────────────────────────
 with st.sidebar:
     st.markdown("### 📷 上传工地照片")
-    st.caption("上传照片后描述您的需求，Agent会自动调用视觉分析工具")
+    st.caption("上传照片后，直接告诉Agent你关心的问题，AI会自动调用视觉分析工具识别安全隐患")
     uploaded_file = st.file_uploader(
         "选择图片",
         type=["jpg", "jpeg", "png", "webp"],
@@ -107,16 +107,17 @@ if user_input:
         else:
             guard.mark_submitted()
 
-            # 构建用户消息（如有图片则附加说明）
+            # 构建用户消息（如有图片则存入Agent待分析队列）
             display_msg = user_input
             if st.session_state.agent_has_image and current_image_b64:
                 display_msg = f"📷 [已上传工地照片] {user_input}"
-                # 实际传给Agent的消息包含图片分析指令
+                # 将图片存入Agent，等待LLM决定是否调用 analyze_construction_image 工具
+                set_pending_image(current_image_b64, current_image_type or "image/jpeg")
                 agent_msg = (
-                    f"{user_input}\n\n[系统提示：用户已上传一张工地照片（base64已就绪），"
-                    f"如需进行隐患分析，请告知用户当前Agent对话模式暂不支持直接图片分析，"
-                    f"建议用户前往'工地隐患识别'页面上传分析。回答时请先回应工友的文字问题。]"
+                    f"📷 我上传了一张工地照片，请帮我分析照片中的安全隐患。\n\n"
+                    f"另外，我还有以下问题：{user_input}"
                 )
+                log("INFO", "Agent page: image passed to agent for analysis")
             else:
                 agent_msg = user_input
 
@@ -146,6 +147,7 @@ if user_input:
                                 "search_regulations": "📚 搜索安全规范",
                                 "generate_training_material": "📝 生成培训内容",
                                 "get_emergency_guide": "🆘 应急指导",
+                                "analyze_construction_image": "📷 分析工地照片",
                             }
                             label = tool_labels.get(tool_name, f"🔧 {tool_name}")
                             placeholder.info(f"{label}: {json.dumps(event.get('args', {}), ensure_ascii=False)[:120]}")
@@ -162,7 +164,7 @@ if user_input:
                             if tool_calls_made:
                                 tools_used = " · ".join(
                                     {"search_regulations": "📚规范检索", "generate_training_material": "📝培训生成",
-                                     "get_emergency_guide": "🆘应急指导"}.get(t, t)
+                                     "get_emergency_guide": "🆘应急指导", "analyze_construction_image": "📷照片分析"}.get(t, t)
                                     for t in tool_calls_made
                                 )
                                 full_response = f"*（已调用工具：{tools_used}）*\n\n{full_response}"

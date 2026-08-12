@@ -6,7 +6,7 @@
 import json
 import base64
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageOps
 
 from core.llm_client import get_vision_client
 from core.knowledge_base import get_knowledge_base
@@ -22,6 +22,12 @@ def encode_image(image_file) -> tuple:
     """
     try:
         img = Image.open(image_file)
+
+        # 自动修正手机拍照的 EXIF 旋转方向
+        try:
+            img = ImageOps.exif_transpose(img)
+        except Exception:
+            pass  # 无 EXIF 或不支持的格式，忽略
 
         # 压缩大图
         max_size = 2000
