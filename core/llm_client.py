@@ -17,7 +17,7 @@ from utils.config import (
 )
 from utils.safety_guard import safe_api_call
 from utils.cache import _qa_cache, _vision_cache
-from utils.logger import log_api_call
+from utils.logger import log, log_api_call
 
 
 def _read_api_key(key_name: str) -> str:

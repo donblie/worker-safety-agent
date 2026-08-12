@@ -49,7 +49,7 @@ with st.sidebar:
     current_image_type = None
     if uploaded_file:
         image_b64, error = encode_image(uploaded_file)
-        if error:
+        if image_b64 is None:
             st.error(error)
         else:
             st.image(uploaded_file, caption="已上传", use_container_width=True)
