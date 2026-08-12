@@ -228,9 +228,10 @@ class VisionClient:
         视觉分析：上传图片 + 文字提示 → 分析结果（带缓存）
         Qwen-VL 支持 OpenAI Vision 格式的图片输入
         """
-        # 用图片前200字符做缓存键（避免整张base64做键太占内存）
-        img_key = image_base64[:200] if image_base64 else ""
-        cached = _vision_cache.get(system_prompt, img_key, user_message)
+        # 用完整base64的MD5做缓存键（防止不同照片因前200字符相同而碰撞）
+        import hashlib as _hashlib
+        img_hash = _hashlib.md5(image_base64.encode()).hexdigest() if image_base64 else ""
+        cached = _vision_cache.get(system_prompt, img_hash, user_message)
         if cached is not None:
             return cached
 
@@ -259,7 +260,7 @@ class VisionClient:
         result = response.choices[0].message.content
         tokens = response.usage.total_tokens if hasattr(response, 'usage') and response.usage else 0
         log_api_call("Qwen-VL", self.model, elapsed, True, tokens_used=tokens)
-        _vision_cache.set(result, system_prompt, img_key, user_message)
+        _vision_cache.set(result, system_prompt, img_hash, user_message)
         return result
 
 
