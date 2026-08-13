@@ -54,7 +54,10 @@ class KnowledgeBase:
         self.chunk_vectors = None              # 向量矩阵（numpy array 或 scipy sparse）
         self._use_embeddings = False           # 是否使用 BGE 语义检索
         self.cache_file = os.path.join(KB_CACHE_DIR, "kb_cache.pkl")
-        self._load_cache()
+        if not self._load_cache():
+            # 缓存不存在/无效/环境不匹配（如本地BGE缓存、云端无BGE）→ 自动从原始文档重建
+            log("INFO", "Cache not usable, auto-rebuilding knowledge base from documents...")
+            self.load_documents()
 
     # ── 文档分块 ────────────────────────────────
 
