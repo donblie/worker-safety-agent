@@ -1,7 +1,7 @@
 """
-知识库模块 —— 支持 BGE 语义检索 + TF-IDF 关键词检索（自动降级）
+知识库模块 —— TF-IDF 关键词检索（默认），预留 BGE 语义检索升级接口
 - 文档加载、分块、向量索引
-- BGE嵌入模型优先（语义理解），TF-IDF兜底（零依赖）
+- TF-IDF 关键词检索（零依赖、毫秒级、云端稳定）；BGE 语义嵌入为可选升级
 - 搜索：输入自然语言问题，返回最相关的规范段落
 """
 import os
@@ -42,7 +42,7 @@ def _try_load_sentence_transformers():
 
 
 class KnowledgeBase:
-    """建筑安全规范知识库（BGE语义检索 + TF-IDF兜底）"""
+    """建筑安全规范知识库（TF-IDF 关键词检索，预留 BGE 语义检索接口）"""
 
     CACHE_VERSION = 2  # 缓存版本号，升级格式时递增
 
@@ -50,7 +50,7 @@ class KnowledgeBase:
         self.chunks: List[Dict] = []           # 所有文本块
         self.embedder = None                   # BGE 模型（SentenceTransformer）
         self.embedder_model: str = ""          # 使用的嵌入模型名
-        self.vectorizer = None                 # TF-IDF vectorizer（兜底用）
+        self.vectorizer = None                 # TF-IDF vectorizer（默认检索）
         self.chunk_vectors = None              # 向量矩阵（numpy array 或 scipy sparse）
         self._use_embeddings = False           # 是否使用 BGE 语义检索
         self.cache_file = os.path.join(KB_CACHE_DIR, "kb_cache.pkl")
@@ -175,7 +175,7 @@ class KnowledgeBase:
     def load_documents(self, docs_dir: str = None) -> int:
         """
         加载目录中的所有txt/md文档，分块并建立索引。
-        BGE嵌入模型优先（语义检索），TF-IDF兜底（关键词检索）。
+        TF-IDF 关键词检索（默认）；已安装 BGE 时自动切换为语义检索（可选升级）。
         返回：已加载的chunk数量
         """
         docs_dir = docs_dir or REGULATIONS_DIR
@@ -204,7 +204,7 @@ class KnowledgeBase:
         self.chunks = all_chunks
         contents = [c["content"] for c in all_chunks]
 
-        # 尝试使用 BGE 嵌入
+        # 可选：已安装 BGE 时使用语义嵌入
         _try_load_sentence_transformers()
         if _SENTENCE_TRANSFORMERS_AVAILABLE:
             try:
@@ -226,7 +226,7 @@ class KnowledgeBase:
                 self._use_embeddings = False
                 self.embedder = None
 
-        # 降级：使用 TF-IDF
+        # 默认：使用 TF-IDF 关键词检索
         if not self._use_embeddings:
             from sklearn.feature_extraction.text import TfidfVectorizer
             print(f"[...] Building TF-IDF index for {len(all_chunks)} chunks ...")
