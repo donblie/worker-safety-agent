@@ -4,9 +4,32 @@
 import streamlit as st
 
 
+_THEME_KEYS = ("light", "warm", "dark")
+
+
+def _resolve_theme():
+    """解析当前主题：URL查询参数优先（跨页面/刷新持久），其次 session_state，默认 warm"""
+    name = st.session_state.get("theme", "warm")
+    try:
+        qp = st.query_params.get("theme")
+        if isinstance(qp, (list, tuple)):
+            qp = qp[0] if qp else None
+        if qp in _THEME_KEYS:
+            name = qp
+            st.session_state.theme = name  # 同步，让侧边栏下拉框等显示正确
+    except Exception:
+        pass
+    return name
+
+
+def theme_href_param():
+    """生成内部链接查询参数（如 ?theme=dark），保证 <a href> 全页面导航主题不丢"""
+    return f"?theme={_resolve_theme()}"
+
+
 def _theme():
     """读取当前主题配色"""
-    name = st.session_state.get("theme", "warm")
+    name = _resolve_theme()
     themes = {
         "light": {
             "bg": "#F8FAFC", "card_bg": "#FFFFFF", "card_border": "#E2E8F0",
@@ -272,6 +295,7 @@ def page_footer(show_home: bool = True):
 def mobile_bottom_nav():
     """移动端底部导航栏 — 粘性固定在页面底部，方便单手操作"""
     t = _theme()
+    tp = theme_href_param()
     st.markdown(f"""
     <style>
         .mobile-nav-spacer {{
@@ -328,23 +352,23 @@ def mobile_bottom_nav():
     </style>
     <div class="mobile-nav-spacer"></div>
     <div class="mobile-bottom-nav">
-        <a href="/" target="_self">
+        <a href="/{tp}" target="_self">
             <span class="nav-icon">🏠</span>
             <span class="nav-label">首页</span>
         </a>
-        <a href="/安全知识问答" target="_self">
+        <a href="/安全知识问答{tp}" target="_self">
             <span class="nav-icon">💬</span>
             <span class="nav-label">问答</span>
         </a>
-        <a href="/工地隐患识别" target="_self">
+        <a href="/工地隐患识别{tp}" target="_self">
             <span class="nav-icon">📷</span>
             <span class="nav-label">隐患</span>
         </a>
-        <a href="/安全培训助手" target="_self">
+        <a href="/安全培训助手{tp}" target="_self">
             <span class="nav-icon">📚</span>
             <span class="nav-label">培训</span>
         </a>
-        <a href="/应急处理指导" target="_self">
+        <a href="/应急处理指导{tp}" target="_self">
             <span class="nav-icon">🆘</span>
             <span class="nav-label">应急</span>
         </a>

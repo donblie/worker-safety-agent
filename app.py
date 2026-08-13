@@ -15,6 +15,13 @@ st.set_page_config(
 if "theme" not in st.session_state:
     st.session_state.theme = "warm"
 
+# 跨页面导航/刷新保持主题：URL 查询参数优先
+_qp_theme = st.query_params.get("theme")
+if isinstance(_qp_theme, (list, tuple)):
+    _qp_theme = _qp_theme[0] if _qp_theme else None
+if _qp_theme in ("light", "warm", "dark"):
+    st.session_state.theme = _qp_theme
+
 # ── 冷启动提示（仅首次加载弹一次）──────────────
 if "app_loaded_once" not in st.session_state:
     st.session_state.app_loaded_once = False
@@ -373,17 +380,17 @@ st.markdown("""
 # ── 功能卡片 ────────────────────────────────
 st.markdown('<p class="section-label">功能模块</p>', unsafe_allow_html=True)
 
-st.markdown("""
+st.markdown(f"""
 <div class="card-grid">
-    <a href="/对话助手" target="_self" class="card-link">
-        <div class="feature-card" style="border: 2px solid #EA580C33; background: linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 100%);">
+    <a href="/对话助手?theme={st.session_state.theme}" target="_self" class="card-link">
+        <div class="feature-card" style="border: 2px solid {t['accent']}33; background: linear-gradient(135deg, {t['accent_light']} 0%, {t['card_bg']} 100%);">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">🤖</div>
-            <div class="card-title">对话助手 <span style="font-size:0.65rem;color:#EA580C;font-weight:700;background:#FFF7ED;padding:2px 6px;border-radius:4px;">NEW</span></div>
+            <div class="card-title">对话助手 <span style="font-size:0.65rem;color:{t['accent']};font-weight:700;background:{t['accent_light']};padding:2px 6px;border-radius:4px;">NEW</span></div>
             <div class="card-desc">智能Agent自动判断需求，一站式搞定知识问答、培训生成、应急指导</div>
         </div>
     </a>
-    <a href="/安全知识问答" target="_self" class="card-link">
+    <a href="/安全知识问答?theme={st.session_state.theme}" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">💬</div>
@@ -391,7 +398,7 @@ st.markdown("""
             <div class="card-desc">输入问题，立即得到基于规范的回答，支持追问</div>
         </div>
     </a>
-    <a href="/工地隐患识别" target="_self" class="card-link">
+    <a href="/工地隐患识别?theme={st.session_state.theme}" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">📷</div>
@@ -399,7 +406,7 @@ st.markdown("""
             <div class="card-desc">拍张照片，AI自动识别安全隐患并给出整改建议</div>
         </div>
     </a>
-    <a href="/安全培训助手" target="_self" class="card-link">
+    <a href="/安全培训助手?theme={st.session_state.theme}" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">📚</div>
@@ -407,7 +414,7 @@ st.markdown("""
             <div class="card-desc">选工种定主题，自动生成培训内容 + 随堂测验</div>
         </div>
     </a>
-    <a href="/应急处理指导" target="_self" class="card-link">
+    <a href="/应急处理指导?theme={st.session_state.theme}" target="_self" class="card-link">
         <div class="feature-card">
             <div class="card-chevron">→</div>
             <div class="card-icon-box">🆘</div>
@@ -451,6 +458,10 @@ with st.sidebar:
     )
     if theme_choice != st.session_state.theme:
         st.session_state.theme = theme_choice
+        try:
+            st.query_params["theme"] = theme_choice
+        except Exception:
+            pass
         st.rerun()
 
     st.markdown("---")
