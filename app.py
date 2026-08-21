@@ -87,7 +87,7 @@ st.markdown(f"""
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {{
         color: {t['text_heading']} !important;
     }}
-    #MainMenu, footer, header[data-testid="stHeader"] {{
+    .stAppHeader, [data-testid="stToolbar"], [data-testid="stMainMenu"], [data-testid="stStatusWidget"], footer {{
         display: none;
     }}
 
