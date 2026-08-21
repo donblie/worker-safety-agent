@@ -94,6 +94,12 @@ st.markdown(f"""
     [data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapseButton"] * {{
         color: {t['accent']} !important;
     }}
+    [data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapseButton"] * {{
+        visibility: visible !important;
+    }}
+    [data-testid="stHeader"] {{
+        background: transparent !important;
+    }}
 
     /* ── Hero ── */
     .hero {{

@@ -72,6 +72,12 @@ def inject_shared_styles():
         [data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapseButton"] * {{
             color: {t['accent']} !important;
         }}
+        [data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapseButton"] * {{
+            visibility: visible !important;
+        }}
+        [data-testid="stHeader"] {{
+            background: transparent !important;
+        }}
 
         .page-header {{
             background: {t['card_bg']};
