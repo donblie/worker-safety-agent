@@ -65,8 +65,12 @@ def inject_shared_styles():
         .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {{
             color: {t['text_heading']} !important;
         }}
-        .stAppHeader, [data-testid="stToolbar"], [data-testid="stMainMenu"], [data-testid="stStatusWidget"], footer {{
+        [data-testid="stMainMenu"], [data-testid="stAppDeployButton"], [data-testid="stStatusWidget"], footer {{
             display: none;
+        }}
+        [data-testid="stExpandSidebarButton"], [data-testid="stExpandSidebarButton"] *,
+        [data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapseButton"] * {{
+            color: {t['accent']} !important;
         }}
 
         .page-header {{
