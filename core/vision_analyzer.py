@@ -128,15 +128,31 @@ def analyze_image(
                 ),
             }
 
-        # ── 步骤3: RAG检索相关规范 ──────────────
+        # ── 步骤3: RAG检索相关规范，逐条匹配到各隐患 ──────────────
         if kb.is_ready():
-            # 根据识别出的隐患类型检索规范
-            hazard_types = [h.get("type", "") for h in result.get("hazards", [])]
+            hazards = result.get("hazards", [])
+
+            # 3.1 为每条隐患匹配最相关的规范条文（Qwen-VL 未给出引用时补充）
+            for h in hazards:
+                if h.get("regulation_ref"):
+                    continue
+                query = f"{h.get('type', '')} {h.get('description', '')}".strip()
+                if not query:
+                    continue
+                matches = kb.search(query, top_k=1)
+                if matches:
+                    m = matches[0]
+                    doc = m["doc_name"].replace(".txt", "").replace(".md", "")
+                    clause = m["content"].replace("\n", " ").strip()
+                    if len(clause) > 120:
+                        clause = clause[:120] + "…"
+                    h["regulation_ref"] = f"依据《{doc}》：{clause}"
+
+            # 3.2 整体检索，供"相关规范条文"参考块展示
+            hazard_types = [h.get("type", "") for h in hazards]
             search_query = " ".join(hazard_types[:3]) if hazard_types else "施工现场安全隐患"
             context = kb.search_formatted(search_query, top_k=3)
-
             if context:
-                # 用LLM将检索到的规范匹配到各隐患
                 result["regulation_context"] = context
 
         # ── 步骤4: 组装最终报告 ────────────────

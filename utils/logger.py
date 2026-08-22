@@ -4,11 +4,8 @@
 - 日志文件自动轮转，保留最近5个文件，每个最大2MB
 """
 import os
-import time
-import functools
 import logging
 from logging.handlers import RotatingFileHandler
-from typing import Callable, Any
 from datetime import datetime
 
 # ── 日志文件路径 ──────────────────────────────
@@ -85,18 +82,3 @@ def log_retrieval(query: str, result_count: int, top_score: float, duration_ms: 
     log("RETRIEVE",
         f"\"{query_preview}\" → {result_count} results, "
         f"top={top_score:.3f}, {duration_ms:.0f}ms")
-
-
-def trace_api(func: Callable) -> Callable:
-    """装饰器：记录函数调用耗时"""
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs) -> Any:
-        start = time.perf_counter()
-        result = func(*args, **kwargs)
-        elapsed = (time.perf_counter() - start) * 1000
-        # 只记录耗时，具体日志由调用方输出
-        if not hasattr(wrapper, '_last_elapsed'):
-            wrapper._last_elapsed = 0.0
-        wrapper._last_elapsed = elapsed
-        return result
-    return wrapper

@@ -65,6 +65,3 @@ KB_CACHE_DIR = _get("KB_CACHE_DIR", "./data/kb_cache")
 APP_TITLE = "工友安全守护Agent"
 APP_ICON = "🛡️"
 APP_DESCRIPTION = "建筑工地安全智能助手 —— 安全知识问答 · 隐患识别 · 安全培训 · 应急指导"
-
-# ── 安全热线（演示用占位，可替换为真实号码）────
-SAFETY_HOTLINE = "XXX-XXXX-XXXX"

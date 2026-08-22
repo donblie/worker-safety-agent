@@ -174,12 +174,6 @@ def execute_tool(tool_name: str, tool_args: dict) -> str:
         )
         if not result.get("success"):
             return f"培训内容生成失败：{result.get('error', '未知错误')}"
-        # 提取关键信息返回给Agent
-        summary = {
-            "title": result.get("title", ""),
-            "outline": result.get("outline", []),
-            "quiz_count": len(result.get("quiz", [])),
-        }
         return json.dumps(result, ensure_ascii=False, indent=2)
 
     elif tool_name == "get_emergency_guide":
@@ -250,39 +244,97 @@ def agent_chat_stream(
     messages.append({"role": "user", "content": user_message})
 
     try:
-        # ── Round 1: 带 Tool 定义的 LLM 调用 ──
         yield {"type": "thinking", "content": "正在分析您的问题..."}
 
-        response = llm.client.chat.completions.create(
-            model=llm.chat_model,
-            messages=messages,
-            tools=TOOLS,
-            tool_choice="auto",
-            temperature=0.3,
-            max_tokens=2000,
-            timeout=llm.timeout,
-        )
-        msg = response.choices[0].message
-
-        # ── 如果有 Tool Call，执行并继续 ──
         tool_rounds = 0
-        while msg.tool_calls and tool_rounds < max_tool_rounds:
+        while True:
+            # 流式调用（stream=True），同时返回文本增量与工具调用
+            stream = llm.client.chat.completions.create(
+                model=llm.chat_model,
+                messages=messages,
+                tools=TOOLS,
+                tool_choice="auto",
+                temperature=0.3,
+                max_tokens=2000,
+                timeout=llm.timeout,
+                stream=True,
+            )
+
+            content_parts = []
+            tool_calls_map = {}  # index -> {id, name, arguments}
+
+            for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                if delta is None:
+                    continue
+
+                # 文本增量 → 逐字流式输出
+                if delta.content:
+                    content_parts.append(delta.content)
+                    yield {"type": "delta", "content": delta.content}
+
+                # 工具调用增量（分片累积）
+                if delta.tool_calls:
+                    for tcd in delta.tool_calls:
+                        idx = tcd.index if tcd.index is not None else 0
+                        entry = tool_calls_map.setdefault(
+                            idx, {"id": "", "name": "", "arguments": ""}
+                        )
+                        if tcd.id:
+                            entry["id"] = tcd.id
+                        if tcd.function:
+                            if tcd.function.name:
+                                entry["name"] += tcd.function.name
+                            if tcd.function.arguments:
+                                entry["arguments"] += tcd.function.arguments
+
+            content = "".join(content_parts)
+            calls = [tool_calls_map[i] for i in sorted(tool_calls_map.keys())]
+
+            # 无工具调用 → 最终回答（文本已流式输出，这里收尾）
+            if not calls:
+                full_text = content or (
+                    "抱歉，我暂时无法回答这个问题，请换个方式描述或联系现场安全员。"
+                )
+                yield {"type": "done", "full_text": full_text}
+                return
+
+            # 达到最大轮次仍要求工具 → 停止调度，直接输出已有内容
+            if tool_rounds >= max_tool_rounds:
+                full_text = content or (
+                    "抱歉，这个任务有点复杂，我暂时处理不了，建议联系现场安全员。"
+                )
+                yield {"type": "done", "full_text": full_text}
+                return
+
             tool_rounds += 1
 
-            for tc in msg.tool_calls:
-                tool_name = tc.function.name
+            # 追加 assistant 的工具调用消息（dict格式，兼容DeepSeek）
+            messages.append({
+                "role": "assistant",
+                "content": content or None,
+                "tool_calls": [
+                    {
+                        "id": c["id"] or f"call_{i}",
+                        "type": "function",
+                        "function": {"name": c["name"], "arguments": c["arguments"]},
+                    }
+                    for i, c in enumerate(calls)
+                ],
+            })
+
+            # 逐个执行工具
+            for i, c in enumerate(calls):
+                tool_name = c["name"]
                 try:
-                    tool_args = json.loads(tc.function.arguments)
+                    tool_args = json.loads(c["arguments"]) if c["arguments"] else {}
                 except json.JSONDecodeError:
                     tool_args = {}
 
-                yield {
-                    "type": "tool_call",
-                    "tool": tool_name,
-                    "args": tool_args,
-                }
+                yield {"type": "tool_call", "tool": tool_name, "args": tool_args}
 
-                # 执行工具
                 tool_result = execute_tool(tool_name, tool_args)
 
                 yield {
@@ -291,42 +343,11 @@ def agent_chat_stream(
                     "content": tool_result[:500] + ("..." if len(tool_result) > 500 else ""),
                 }
 
-                # 追加 tool 消息到对话（dict格式，兼容DeepSeek）
-                messages.append({
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [{
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments,
-                        }
-                    }],
-                })
                 messages.append({
                     "role": "tool",
-                    "tool_call_id": tc.id,
+                    "tool_call_id": c["id"] or f"call_{i}",
                     "content": tool_result,
                 })
-
-            # 继续 LLM 调用
-            response = llm.client.chat.completions.create(
-                model=llm.chat_model,
-                messages=messages,
-                tools=TOOLS,
-                tool_choice="auto",
-                temperature=0.3,
-                max_tokens=2000,
-                timeout=llm.timeout,
-            )
-            msg = response.choices[0].message
-
-        # ── 最终回答 ──
-        if msg.content:
-            yield {"type": "done", "full_text": msg.content}
-        else:
-            yield {"type": "done", "full_text": "抱歉，我暂时无法回答这个问题，请换个方式描述或联系现场安全员。"}
 
     except Exception as e:
         log("ERROR", f"Agent chat failed [{type(e).__name__}]: {str(e)[:200]}")
