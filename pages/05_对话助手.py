@@ -123,12 +123,9 @@ if user_input:
             display_msg = user_input
             if st.session_state.agent_has_image and current_image_b64:
                 display_msg = f"📷 [已上传工地照片] {user_input}"
-                # 将图片存入Agent，等待LLM决定是否调用 analyze_construction_image 工具
+                # 将图片存入Agent，由LLM根据问题是否涉及照片自行决定是否调用视觉分析工具
                 set_pending_image(current_image_b64, current_image_type or "image/jpeg")
-                agent_msg = (
-                    f"📷 我上传了一张工地照片，请帮我分析照片中的安全隐患。\n\n"
-                    f"另外，我还有以下问题：{user_input}"
-                )
+                agent_msg = display_msg
                 log("INFO", "Agent page: image passed to agent for analysis")
             else:
                 agent_msg = user_input
