@@ -43,7 +43,7 @@ streamlit run app.py
 - **视觉模型**: Qwen-VL（qwen-vl-max）
 - **检索**: TF-IDF关键词检索（char ngram 1-2），零外部依赖、毫秒级响应；预留BGE语义嵌入接口，知识库扩充后可无缝升级
 - **Agent**: 单Agent + 4Tool（规范搜索/照片分析/培训生成/应急指导），DeepSeek Function Calling自动调度
-- **工程化**: JSON Schema校验、LRU缓存+TTL、结构化日志、线程安全单例、60+安全关键词过滤
+- **工程化**: JSON Schema校验、LRU缓存+TTL、结构化日志、线程安全单例、80+安全关键词过滤
 - **知识库**: 建筑安全规范文档（高处作业/脚手架/临时用电/个人防护/模板工程/塔吊起重），26个语义块
 
 ## 项目结构
