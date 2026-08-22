@@ -16,6 +16,9 @@ from utils.safety_guard import validate_input, FALLBACK_MESSAGES, SubmitGuard
 from utils.ui_components import inject_shared_styles, page_header, page_footer, mobile_bottom_nav
 from utils.logger import log
 
+# 判定工友这句话是否想分析照片的关键词（只有命中才把图片交给Agent，避免有图时每次都被强制分析）
+PHOTO_INTENT_KEYWORDS = ("照片", "图片", "这张")
+
 # ── 页面配置 ─────────────────────────────────
 st.set_page_config(
     page_title="对话助手 - 工友安全守护",
@@ -119,11 +122,12 @@ if user_input:
         else:
             guard.mark_submitted()
 
-            # 构建用户消息（如有图片则存入Agent待分析队列）
+            # 构建用户消息（只有问题明确涉及照片时，才把图片交给Agent分析；否则按纯文本知识问题处理）
             display_msg = user_input
-            if st.session_state.agent_has_image and current_image_b64:
+            wants_photo = any(k in user_input for k in PHOTO_INTENT_KEYWORDS)
+
+            if st.session_state.agent_has_image and current_image_b64 and wants_photo:
                 display_msg = f"📷 [已上传工地照片] {user_input}"
-                # 将图片存入Agent，由LLM根据问题是否涉及照片自行决定是否调用视觉分析工具
                 set_pending_image(current_image_b64, current_image_type or "image/jpeg")
                 agent_msg = display_msg
                 log("INFO", "Agent page: image passed to agent for analysis")
