@@ -353,6 +353,9 @@ def agent_chat_stream(
         log("ERROR", f"Agent chat failed [{type(e).__name__}]: {str(e)[:200]}")
         from utils.safety_guard import FALLBACK_MESSAGES
         yield {"type": "error", "content": FALLBACK_MESSAGES.get("unknown_error", str(e))}
+    finally:
+        # 无论本轮是否调用视觉工具，结束后都清空待分析图片，防止残留到下一轮/其他用户
+        clear_pending_image()
 
 
 # 便捷方法：返回完整文本（非流式）

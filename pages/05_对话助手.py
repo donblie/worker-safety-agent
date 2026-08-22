@@ -97,7 +97,9 @@ if not user_input and quick_prompt:
 
 # ── 处理用户输入 ────────────────────────────
 if user_input:
-    error_msg = validate_input(user_input)
+    # 已上传照片时，图片本身就是安全场景，跳过关键词过滤（避免"帮我看看这张照片"被误拦）
+    has_image = st.session_state.agent_has_image and bool(current_image_b64)
+    error_msg = validate_input(user_input, allow_non_safety=has_image)
     if error_msg:
         st.error(error_msg)
     else:
