@@ -30,7 +30,7 @@ pip install -r requirements.txt
 #    - QWEN_API_KEY: 从 dashscope.aliyun.com 获取
 
 # 3. 初始化知识库
-python init_kb.py
+python scripts/init_kb.py
 
 # 4. 启动应用
 streamlit run app.py

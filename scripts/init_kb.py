@@ -2,13 +2,13 @@
 知识库初始化脚本
 运行一次即可将安全规范文档加载到本地知识库（TF-IDF 关键词检索，预留 BGE 语义嵌入接口）
 
-用法: python init_kb.py
+用法: python scripts/init_kb.py
 """
 import sys
 import os
 
 # 添加项目根目录到路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.knowledge_base import get_knowledge_base
 
