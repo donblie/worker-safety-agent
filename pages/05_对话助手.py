@@ -97,9 +97,19 @@ if not user_input and quick_prompt:
 
 # ── 处理用户输入 ────────────────────────────
 if user_input:
-    # 已上传照片时，图片本身就是安全场景，跳过关键词过滤（避免"帮我看看这张照片"被误拦）
+    # 已上传照片时，图片本身就是安全场景，跳过安全关键词过滤（避免"帮我看看这张照片"被误拦）
     has_image = st.session_state.agent_has_image and bool(current_image_b64)
-    error_msg = validate_input(user_input, allow_non_safety=has_image)
+    if has_image:
+        # 有图时仅做空输入与长度校验，安全相关性由图片本身保证
+        stripped = user_input.strip()
+        if not stripped:
+            error_msg = FALLBACK_MESSAGES["empty_input"]
+        elif len(stripped) < 2:
+            error_msg = "请至少输入2个字描述您的问题。"
+        else:
+            error_msg = None
+    else:
+        error_msg = validate_input(user_input)
     if error_msg:
         st.error(error_msg)
     else:

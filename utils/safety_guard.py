@@ -151,20 +151,17 @@ def validate_image(file_size: int, file_type: str) -> Optional[str]:
     return None
 
 
-def validate_input(text: str, allow_non_safety: bool = False) -> Optional[str]:
+def validate_input(text: str) -> Optional[str]:
     """
     校验文本输入
     返回 None 表示通过；返回 str 表示错误提示
-
-    allow_non_safety=True 时跳过安全关键词过滤，用于已上传工地照片的场景——
-    此时图片本身就是安全场景，文字可能只是"帮我看看这张照片"这类无关键词描述。
     """
     if not text or not text.strip():
         return FALLBACK_MESSAGES["empty_input"]
     if len(text.strip()) < 2:
         return "请至少输入2个字描述您的问题。"
     # 检查是否与安全相关（关键词快速过滤）
-    if not allow_non_safety and not _is_safety_related(text.strip()):
+    if not _is_safety_related(text.strip()):
         return FALLBACK_MESSAGES["not_safety_related"]
     return None
 
